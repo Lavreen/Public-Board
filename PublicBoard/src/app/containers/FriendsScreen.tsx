@@ -19,7 +19,7 @@ interface Props {
     onChangeText?: (text: string) => void;
 }
 
-const FriendsViewComponent: FC = () => {
+const FriendsScreen: FC = () => {
 
   //const [friends, setFriends] = useState<Friend[] | null> (null)
   const dispatch = useDispatch();
@@ -230,4 +230,4 @@ const Friends: Friend[] =  [
 ];
 
 
-export default FriendsViewComponent;
+export default FriendsScreen;
