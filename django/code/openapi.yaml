@@ -1,0 +1,141 @@
+openapi: 3.0.3
+info:
+  title: Messages Api
+  version: 1.0.1
+  description: Documentation of API created for project course  'Programowanie zespołowe'
+servers:
+- url: http://127.0.0.1:8000
+  description: Web service
+paths:
+  /app_messages/actions/:
+    get:
+      description: Returns list of all messages
+      responses:
+        '200':
+          description: A list of messages.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+              examples:
+                array:
+                  value:
+                    - id: 1
+                      message_text: safaasdasdasdasd
+                      pub_date: '2021-12-11'
+                    - id: 2
+                      message_text: asdasd
+                      pub_date: '2021-12-07'
+                    - id: 3
+                      message_text: adam
+                      pub_date: '2021-12-12'
+                    - id: 4
+                      message_text: adam
+                      pub_date: '2021-12-12'
+    post:
+      summary: add message
+      description: ''
+      operationId: ''
+      requestBody:
+        required: true
+        content:
+          "application/x-www-form-urlencoded":
+            schema:
+              type: object
+              properties:
+                message_text:
+                  type: string
+                pub_date:
+                  type: string
+              required:
+                - message_text
+                - pub_date
+      responses:
+        '201':
+          description: OK
+  # panowie nie wiedziałem jak zrobić to jako zmienną
+  # jak robimy zapytanie to podajemy tak /app_messages/actions/3/
+  /app_messages/actions/id/:
+    get:
+      summary: to id podajesz, czyli na przyklad /actions/2
+      responses:
+        '200':
+          description: A list of messages.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                req_data:
+                  - id: 1
+                    message_text: safaasdasdasdasd
+                    pub_date: '2021-12-11'
+        '404':
+          description: Not found
+
+    put:
+      summary: update message
+      description: ''
+      operationId: ''
+      requestBody:
+        required: true
+        content:
+          "application/x-www-form-urlencoded":
+            schema:
+              type: object
+              properties:
+                message_text:
+                  type: string
+                pub_date:
+                  type: string
+              required:
+                - message_text
+                - pub_date
+      responses:
+        '201':
+          description: OK
+  /app_messages/actions/today_messages/:
+    get:
+      summary: messages from curr date
+      responses:
+        '200':
+          description: A list of messages.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                req_data:
+                  - id: 1
+                    message_text: safaasdasdasdasd
+                    pub_date: '2021-12-11'
+                  - id: 4
+                    message_text: buenos_diaz
+                    pub_date: '2021-12-11'
+        '404':
+          description: Not found
+  /app_messages/actions/last_messages/:
+    get:
+      summary: messages from curr date and the day before
+      responses:
+        '200':
+          description: A list of messages.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                req_data:
+                  - id: 1
+                    message_text: safaasdasdasdasd
+                    pub_date: '2021-12-11'
+                  - id: 3
+                    message_text: witam, z tej strony urzad skarbowy
+                    pub_date: '2021-12-10'
+                  - id: 4
+                    message_text: buenos_diaz
+                    pub_date: '2021-12-11'
+        '404':
+          description: Not found

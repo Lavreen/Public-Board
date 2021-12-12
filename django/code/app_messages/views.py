@@ -54,8 +54,8 @@ class MessageViewModel(viewsets.ModelViewSet):
 
     @action(detail=False)
     def last_messages(self, request):
-        curr_date = str(datetime.date(datetime.today() + timedelta(days=1)))
-        yesterday = str(datetime.date(datetime.today() ))#-timedelta(days=1)))
+        curr_date = str(datetime.date(datetime.today()))
+        yesterday = str(datetime.date(datetime.today() - timedelta(days=1)))
         recent_messages = Message.objects.filter(pub_date__in=[yesterday, curr_date])
 
         # page = self.paginate_queryset(recent_messages)
