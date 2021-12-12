@@ -60,9 +60,9 @@ function makeUseFetch(apiRequest: (suffix?: String) => Promise<any>) {
   };
 }
 
-const getTodayMessages = makeApiCall(TODAY_MESSAGES_URL);
-const getLastMessages = makeApiCall(LAST_MESSAGES_URL);
-const getMessageById = makeApiCall(MESSAGE_BY_ID_URL);
+export const getTodayMessages = makeApiCall(TODAY_MESSAGES_URL);
+export const getLastMessages = makeApiCall(LAST_MESSAGES_URL);
+export const getMessageById = makeApiCall(MESSAGE_BY_ID_URL);
 
 export const useGetTodayMessages = makeUseFetch(getTodayMessages);
 export const useGetLastMessages = makeUseFetch(getLastMessages);
