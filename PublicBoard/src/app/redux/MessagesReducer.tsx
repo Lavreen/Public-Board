@@ -1,4 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { postMessage } from "../utils/Api";
 
 export interface Message {
     id: string,
@@ -27,6 +28,13 @@ export const sendMessage = createAsyncThunk(
     'messages/sendMessage',
     async (messageText: string) => {
         //todo REST API POST
+        var date = new Date().getDate();
+        var month = new Date().getMonth() + 1;
+        var year = new Date().getFullYear();
+        
+        let dateText = year + '-' + month + '-' + date;
+        let body = 'message_text=' + messageText + '&pub_date=' + dateText
+        postMessage(body)
     }
 );
 
