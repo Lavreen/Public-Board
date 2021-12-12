@@ -2,6 +2,7 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
 //todo SQL Lite dependency
 type Friend = {
+    id: number,
     nickname: string,
     pubKey: string
 }
@@ -21,7 +22,7 @@ export const loadFriends = createAsyncThunk(
     }
 );
 
-export const addFirend = createAsyncThunk(
+export const addFriend = createAsyncThunk(
     'friends/addFirend',
     async (friend: Friend) => {
         //todo SQL Lite save
@@ -43,8 +44,9 @@ export const FriendsStoreSlice = createSlice({
         builder.addCase(loadFriends.fulfilled, (state, action) => {
             //todo add friends to state
         })
-        builder.addCase(addFirend.fulfilled, (state, action) => {
+        builder.addCase(addFriend.fulfilled, (state, action) => {
             //todo add friend to state
+            //state.Friends.push(action.meta.arg)
         })
         builder.addCase(deleteFirend.fulfilled, (state, action) => {
             //todo remove friend from state
@@ -52,4 +54,5 @@ export const FriendsStoreSlice = createSlice({
     }
 });
 
+export type {Friend};
 export default FriendsStoreSlice.reducer;

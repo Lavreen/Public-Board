@@ -23,6 +23,13 @@ export const loadStoredMessages = createAsyncThunk(
     }
 );
 
+export const sendMessage = createAsyncThunk(
+    'messages/sendMessage',
+    async (messageText: string) => {
+        //todo REST API POST
+    }
+);
+
 export const deleteMessages = createAsyncThunk(
     'messages/deleteMessages',
     async (ids: Array<string>) => {
@@ -57,6 +64,10 @@ export const MessageStoreSlice = createSlice({
         })
         builder.addCase(loadStoredMessages.fulfilled, (state, action) => {
             //todo Add messages to store
+        })
+        builder.addCase(sendMessage.fulfilled, (state, action) => {
+            //todo Add messages to store
+            //console.log(action.meta.arg)
         })
     }
 });
