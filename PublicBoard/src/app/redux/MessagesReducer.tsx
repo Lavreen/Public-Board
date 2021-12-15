@@ -1,32 +1,52 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { getMessageById, postMessage } from '../utils/Api';
 
-export interface Message {
+
+export type Message = {
     id: string,
-    data: string,
+    data: string | null,
     timestamp: string | null
     source: string | null
     message: string | null
 }
 
 export type MessagesState = {
-    messages: Array<Message>
+    messages: Array<Message>,
+    id: number,
+    selfid: number
 }
 
 const initialState: MessagesState = {
-    messages: []
+    messages: [],
+    id: 0,
+    selfid: 0
 }
 
 export const loadStoredMessages = createAsyncThunk(
     'messages/loadStoredMessages',
     async () => {
         //todo SQL Lite import
+        let messages: Array<Message> = []
+        //todo get last message id and last sent message id
+        let id = 0, selfid = 0;
+        return { messages: messages, id: id, selfid: selfid }
     }
 );
 
 export const sendMessage = createAsyncThunk(
     'messages/sendMessage',
-    async (messageText: string) => {
-        //todo REST API POST
+    async (message: { text: string, to: string }) => {
+        //todo encrypt message
+        let encrypted = message.text
+        //temporary
+        var date = new Date().getDate();
+        var month = new Date().getMonth() + 1;
+        var year = new Date().getFullYear();
+
+        let dateText = year + '-' + month + '-' + date;
+        let post = 'message_text=' + message.text + '&pub_date=' + dateText
+        await postMessage(post)
+        return encrypted;
     }
 );
 
@@ -40,11 +60,18 @@ export const deleteMessages = createAsyncThunk(
 export const fetchMessages = createAsyncThunk(
     'messages/fetchMessages',
     async () => {
-        //todo REST API get
-        const response = await fetch('https://reqres.in/api/users?page=2');
-        const messages = await response.json();
-        //todo Parse messages
-        //todo add to SQL Lite
+        const data = await getMessageById();
+        let messages: Array<Message> = []
+        //todo decrypt and resolve accruate timestamp and pubkey
+        for (let item of data) {
+            messages.push({
+                id: item.id,
+                data: null,
+                timestamp: item.pub_date,
+                source: null,
+                message: item.message_text
+            });
+        }
         return messages;
     }
 );
@@ -56,18 +83,42 @@ export const MessageStoreSlice = createSlice({
     reducers: {},
     extraReducers: (builder) => {
         builder.addCase(fetchMessages.fulfilled, (state, action) => {
-            console.log(action.payload.data);
-            //todo Add messages to store
+            let maxid = state.id;
+            action.payload.forEach(
+                (message) => {
+                    //fech from id not yet implemented need guard
+                    if(state.id< (+message.id)){
+                        state.messages.push(message)
+                    }
+                    if((+message.id) > maxid) {
+                        maxid = (+message.id);
+                    }
+                    state.id = maxid
+                }
+            );
         })
         builder.addCase(deleteMessages.fulfilled, (state, action) => {
-            //todo Remove messages from state
+            state.messages = state.messages.filter((msg) => {
+                action.meta.arg.some((id) => { msg.id == id })
+            })
         })
         builder.addCase(loadStoredMessages.fulfilled, (state, action) => {
-            //todo Add messages to store
+            state.id = action.payload.id;
+            state.selfid = action.payload.selfid;
+            action.payload.messages.forEach(
+                (message) => state.messages.push(message)
+            );
         })
         builder.addCase(sendMessage.fulfilled, (state, action) => {
-            //todo Add messages to store
-            //console.log(action.meta.arg)
+            state.messages.push({
+                id: `SELF-${state.selfid}`,
+                // data: action.payload,
+                data: null,
+                message: action.meta.arg.text,
+                timestamp: null,
+                source: 'SELF'
+            });
+            state.selfid++;
         })
     }
 });

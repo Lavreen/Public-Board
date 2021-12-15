@@ -19,6 +19,9 @@ export const loadFriends = createAsyncThunk(
     'friends/loadFriends',
     async () => {
         //todo SQL Lite import
+        let friends: Array<Friend> = []
+
+        return friends;
     }
 );
 
@@ -31,7 +34,7 @@ export const addFriend = createAsyncThunk(
 
 export const deleteFirend = createAsyncThunk(
     'friends/deleteFirend',
-    async (friend: Friend) => {
+    async (pubkey: string) => {
         //todo SQL Lite save
     }
 );
@@ -42,14 +45,15 @@ export const FriendsStoreSlice = createSlice({
     reducers: {},
     extraReducers: (builder) => {
         builder.addCase(loadFriends.fulfilled, (state, action) => {
-            //todo add friends to state
+            action.payload.forEach(
+                (friend)=>state.Friends.push(friend)
+            ); 
         })
         builder.addCase(addFriend.fulfilled, (state, action) => {
-            //todo add friend to state
-            //state.Friends.push(action.meta.arg)
+            state.Friends.push(action.meta.arg);
         })
         builder.addCase(deleteFirend.fulfilled, (state, action) => {
-            //todo remove friend from state
+            state.Friends = state.Friends.filter((friend)=>{friend.pubKey != action.meta.arg})
         })
     }
 });

@@ -1,10 +1,10 @@
-import React, {useState, FC} from 'react';
-import { 
-    SafeAreaView, 
-    View, 
-    Text, 
-    StyleSheet, 
-    TextInput, 
+import React, { useState, FC, useEffect } from 'react';
+import {
+    SafeAreaView,
+    View,
+    Text,
+    StyleSheet,
+    TextInput,
     Button,
     TouchableOpacity,
     FlatList,
@@ -12,28 +12,29 @@ import {
 
 import { RootState } from '../redux/Store';
 import { useDispatch, useSelector } from 'react-redux';
-import { Message, sendMessage} from '../redux/MessagesReducer';
+import { fetchMessages, Message, sendMessage } from '../redux/MessagesReducer';
 
 const BoardScreen: FC = () => {
 
     const [messageText, setMessageText] = useState<string>("")
     const messages = useSelector((state: RootState) => state.message.messages);
     const dispatch = useDispatch();
-    const submitMessage = ()=>{
-        dispatch(sendMessage(messageText))
+    const submitMessage = () => {
+        dispatch(sendMessage({ text: messageText, to: 'SELF' }));
     }
-    return ( 
+    return (
         <SafeAreaView style={styles.container}>
+            <Button title='fetch messages' onPress={() => dispatch(fetchMessages())}></Button>
             <FlatList
-                data={messages} 
-                renderItem={
-                ({item}) => (
-              <MessageItem {...item} />
-            )}>
-            </FlatList>
+                data={messages}
+                //temporary cause weird looking animation change to scroll list?
+                inverted={true}
+                contentContainerStyle={{ flexDirection: 'column-reverse' }}
+                renderItem={({ item }) => (<MessageItem {...item} />)}
+            />
             <View style={styles.creteMessage}>
                 <View style={styles.viewStyle}>
-                    <TextInput 
+                    <TextInput
                         style={styles.textInput}
                         value={messageText}
                         placeholderTextColor="#555"
@@ -43,18 +44,26 @@ const BoardScreen: FC = () => {
                 <TouchableOpacity style={styles.sendButton} onPress={submitMessage} >
                     <Text>{">"}</Text>
                 </TouchableOpacity>
-            </View> 
-        </SafeAreaView> 
+            </View>
+        </SafeAreaView>
     );
 }
 
 const MessageItem: FC<Message> = (props) => {
-    return (
-        <View style={styles.messageItem}>
-           <Text>{props.message}</Text> 
-           <Text>{props.data}</Text> 
-        </View> 
-    )
+    if (typeof props.id === 'string' && props.id.startsWith('SELF-'))
+        return (
+            <View style={styles.myMessageItem}>
+                <Text>{props.message}</Text>
+                <Text>{props.data}</Text>
+            </View>
+        );
+    else
+        return (
+            <View style={styles.messageItem}>
+                <Text>{props.message}</Text>
+                <Text>{props.data}</Text>
+            </View>
+        );
 }
 
 const styles = StyleSheet.create({
@@ -62,6 +71,9 @@ const styles = StyleSheet.create({
         backgroundColor: "white",
         flex: 1,
         flexDirection: "column",
+    },
+    myMessageItem: {
+        backgroundColor: "#EEEEEE"
     },
     messageItem: {
 
