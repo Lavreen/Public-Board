@@ -33,7 +33,21 @@ class MessageViewModel(viewsets.ModelViewSet):
         queryset = Message.objects.all()
         date = self.request.query_params.get('pub_date')
         if date is not None:
-            queryset = queryset.filter(pub_date__gt="2021-12-06")
+            queryset = queryset.filter(pub_date__gt=date)
+
+        id_filter = self.request.query_params.get('id_filter')
+        if id_filter is not None:
+            id_filter = int(id_filter)
+            queryset = queryset.filter(id__gte=id_filter)
+
+        date1 = self.request.query_params.get('date1')
+        date2 = self.request.query_params.get('date2')
+
+        if date1 is not None and date2 is not None:
+            queryset = queryset.filter(pub_date__gt=date1)
+            queryset = queryset.filter(pub_date__lt=date2)
+
+
         return queryset
 
     @action(detail=False)
@@ -81,3 +95,5 @@ class MessageViewModel(viewsets.ModelViewSet):
         serializer = MessageSerializer(message)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
