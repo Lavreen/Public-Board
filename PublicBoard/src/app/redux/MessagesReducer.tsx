@@ -1,6 +1,8 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { getMessageById, postMessage } from '../utils/Api';
-
+import { getLastMessages, getMessageById, postMessage } from '../utils/Api';
+import { EncryptedMessage, generateEncryptedMessage } from '../utils/Crypto';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../redux/Store';
 
 export type Message = {
     id: string,
@@ -35,18 +37,15 @@ export const loadStoredMessages = createAsyncThunk(
 
 export const sendMessage = createAsyncThunk(
     'messages/sendMessage',
-    async (message: { text: string, to: string }) => {
+    async (message: { text: string, destKey: string }) => {
         //todo encrypt message
-        let encrypted = message.text
-        //temporary
-        var date = new Date().getDate();
-        var month = new Date().getMonth() + 1;
-        var year = new Date().getFullYear();
+        const dispatch = useDispatch();
+        const keys = useSelector((state: RootState) => state.security!.rsa)
+        let encryptedMessage = await generateEncryptedMessage(message.destKey, keys, message.text)
 
-        let dateText = year + '-' + month + '-' + date;
-        let post = 'message_text=' + message.text + '&pub_date=' + dateText
-        await postMessage(post)
-        return encrypted;
+        await postMessage(encryptedMessage)
+        
+        return encryptedMessage;
     }
 );
 
@@ -60,7 +59,9 @@ export const deleteMessages = createAsyncThunk(
 export const fetchMessages = createAsyncThunk(
     'messages/fetchMessages',
     async () => {
-        const data = await getMessageById();
+        //todo get latest message id from SQL Lite
+        // const data = await getMessageById();
+        const data = await getLastMessages();
         let messages: Array<Message> = []
         //todo decrypt and resolve accruate timestamp and pubkey
         for (let item of data) {

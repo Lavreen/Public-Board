@@ -1,22 +1,17 @@
 import { useState, useEffect } from "react";
+import urlJson from './api-url.json';
+import { EncryptedMessage, RawMessage } from './Crypto';
 
-const API_BASE = "http://127.0.0.1:8000/";
-const TODAY_MESSAGES_URL = API_BASE + "app_messages/actions/today_messages/";
-const LAST_MESSAGES_URL = API_BASE + "app_messages/actions/last_messages/";
-const MESSAGE_BY_ID_URL = API_BASE + "app_messages/actions/";
-const SEND_MESSAGE_URL = API_BASE + "app_messages/actions/";
+const API_BASE = urlJson.url;
+const TODAY_MESSAGES_URL = API_BASE + urlJson.today;
+const LAST_MESSAGES_URL = API_BASE + urlJson.last;
+const MESSAGE_BY_ID_URL = API_BASE + urlJson.byId;
+const SEND_MESSAGE_URL = API_BASE + urlJson.send;
 
-export interface Message {
-  id: string;
-  data: string;
-  timestamp: string | null;
-  source: string | null;
-  message: string | null;
-}
 
-function isMessage(message: any): message is Message {
+function isMessage(message: any): message is EncryptedMessage {
   //typeguard
-  return typeof message.id === "string" && typeof message.data === "string";
+  return typeof message.id === "string" && typeof message.key === "string" && typeof message.data === "string";
 }
 
 function makeApiCall(http: string) {
@@ -46,7 +41,7 @@ function makeApiCall(http: string) {
 
 function makeUseFetch(apiRequest: (suffix?: String) => Promise<any>) {
   return (suffix?: String) => {
-    const [data, setData] = useState<Message[]>([]);
+    const [data, setData] = useState<EncryptedMessage[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<null | Error>(null);
     useEffect(() => {
@@ -70,13 +65,13 @@ export const useGetMessageById = makeUseFetch(getMessageById);
 
 export const useGetAllMessages = makeUseFetch(getTodayMessages);
 
-export async function postMessage(textData: string) {
+export async function postMessage(textData: EncryptedMessage) {
   // const [data, setData] = useState<Message[]>([]);
   // const [loading, setLoading] = useState<boolean>(true);
   // const [error, setError] = useState<null | Error>(null);
   let data = {
     method: "POST",
-    body: textData,
+    body: JSON.stringify(textData),
     headers: {
       Accept: "application/json",
       "Content-Type": "application/x-www-form-urlencoded",

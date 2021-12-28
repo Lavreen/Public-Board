@@ -1,0 +1,7 @@
+{ 
+    "url": "http://127.0.0.1:8000/",
+    "today": "app_messages/actions/today_messages/",
+    "last": "app_messages/actions/last_messages/",
+    "byId": "app_messages/actions/",
+    "send": "app_messages/actions/"
+}
