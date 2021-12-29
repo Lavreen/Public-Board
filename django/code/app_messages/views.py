@@ -47,7 +47,6 @@ class MessageViewModel(viewsets.ModelViewSet):
             queryset = queryset.filter(pub_date__gt=date1)
             queryset = queryset.filter(pub_date__lt=date2)
 
-
         return queryset
 
     @action(detail=False)
@@ -88,10 +87,9 @@ class MessageViewModel(viewsets.ModelViewSet):
 
         # request.POST['message_text'],
         message = Message.objects.create(
-            message_text = request.POST['message_text'],
-            pub_date=request.POST['pub_date']
+            data=request.POST['data'],
+            pub_date=str(datetime.date(datetime.today())),
+            key=request.POST['key'],
         )
         serializer = MessageSerializer(message)
-        return Response({"new_id" : serializer.data["id"]}, status=status.HTTP_201_CREATED, )
-
-
+        return Response({"new_id": serializer.data["id"]}, status=status.HTTP_201_CREATED, )

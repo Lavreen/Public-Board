@@ -5,10 +5,10 @@ from .models import Message
 
 class MessageAdmin(admin.ModelAdmin):
     list_filter = ['pub_date']
-    search_fields = ['message_text']
-    list_display = ('message_text', 'pub_date')
+    search_fields = ['data']
+    list_display = ('data', 'pub_date')
     fieldsets = [
-        (None, {'fields': ['message_text']}),
+        (None, {'fields': ['data']}),
         ('Date information', {'fields': ['pub_date'], 'classes': ['collapse']}),
     ]
 

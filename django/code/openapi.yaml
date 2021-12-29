@@ -10,6 +10,27 @@ paths:
   /app_messages/actions/:
     get:
       description: Returns list of all messages
+      parameters:
+        - name: pub_date
+          in: query
+          description: You put it if you want to filter messages with greater date
+          schema:
+            type: string
+        - name: id_filter
+          in: query
+          description: You put it if you want to filter messages with greater or equal id
+          schema:
+            type: integer
+        - name: date1
+          in: query
+          description: You put it if you want to filter messages with greater date
+          schema:
+            type: string
+        - name: date2
+          in: query
+          description: You put it if you want to filter messages with less date (IT SHOULD BE USED ONLY WITH 'date1')
+          schema:
+            type: string
       responses:
         '200':
           description: A list of messages.
@@ -45,7 +66,7 @@ paths:
             schema:
               type: object
               properties:
-                message_text: 
+                message_text:
                   type: string
                 pub_date:
                   type: string
@@ -66,7 +87,7 @@ paths:
                     example: 2137
   # panowie nie wiedziałem jak zrobić to jako zmienną
   # jak robimy zapytanie to podajemy tak /app_messages/actions/3/
-  /app_messages/actions/id/: 
+  /app_messages/actions/id/:
     get:
       summary: to id podajesz, czyli na przyklad /actions/2
       responses:
@@ -83,7 +104,7 @@ paths:
                     pub_date: '2021-12-11'
         '404':
           description: Not found
-        
+
     put:
       summary: update message
       description: ''
@@ -95,7 +116,7 @@ paths:
             schema:
               type: object
               properties:
-                message_text: 
+                message_text:
                   type: string
                 pub_date:
                   type: string
@@ -141,11 +162,10 @@ paths:
                     message_text: safaasdasdasdasd
                     pub_date: '2021-12-11'
                   - id: 3
-                    message_text: witam, z tej strony urzad skarbowy 
+                    message_text: witam, z tej strony urzad skarbowy
                     pub_date: '2021-12-10'
                   - id: 4
                     message_text: buenos_diaz
                     pub_date: '2021-12-11'
         '404':
           description: Not found
-    
