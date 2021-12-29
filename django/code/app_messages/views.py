@@ -92,6 +92,6 @@ class MessageViewModel(viewsets.ModelViewSet):
             pub_date=request.POST['pub_date']
         )
         serializer = MessageSerializer(message)
-        return Response({"new_id" : serializer.data["id"]}, status=status.HTTP_201_CREATED, )
+        return Response({"created_id" : serializer.data["id"]}, status=status.HTTP_201_CREATED, )
 
 
