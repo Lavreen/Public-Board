@@ -1,25 +1,23 @@
 import React, { useState } from 'react';
 import { View, Button, Text, TextInput } from 'react-native';
 import { useDispatch } from 'react-redux';
-import { deleteData, loadKeys } from '../redux/SecurityReducer';
+import { createNewKeys } from '../redux/SecurityReducer';
 
 
-export default function LoginScreen(): JSX.Element | null  {
+export default function CreateUserScreeen(): JSX.Element | null  {
     const dispatch = useDispatch();	
     const [password, setPassword] = useState('');
 
     return(
         <View>
-            <Text>Passprase login required </Text>
+            <Text>Create new Account</Text>
             <Text></Text>
-            <Text>Password</Text>
+            <Text>Password (optional)</Text>
             <TextInput
                 onChangeText={(text) => setPassword(text)}
                 value={password}
             />
-            <Button title="Login" onPress={() => dispatch(loadKeys(password))}></Button>
-            <Button title="Delete User Data" onPress={() => dispatch(deleteData())}></Button>
-            
+            <Button title="Create Account" onPress={() => dispatch(createNewKeys(password))}></Button>
         </View>
     )
 }

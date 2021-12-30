@@ -95,18 +95,22 @@ const BoardScreen: FC = () => {
 }
 
 const MessageItem: FC<Message> = (props) => {
+    let data = props.data?.slice(0,90)
+    if(props.data!=null && props.data.length > 90)
+        data += '...'
+
     if (typeof props.id === 'string' && props.id.startsWith('SELF-'))
         return (
             <View style={styles.myMessageItem}>
                 <Text style={styles.greenText}>{props.message}</Text>
-                <Text style={styles.redText}>{props.data}</Text>
+                <Text style={styles.redText}>{data}</Text>
             </View>
         );
     else
         return (
             <View style={styles.messageItem}>
                 <Text style={styles.greenText}>{props.message}</Text>
-                <Text style={styles.redText}>{props.data}</Text>
+                <Text style={styles.redText}>{data}</Text>
             </View>
         );
 }
