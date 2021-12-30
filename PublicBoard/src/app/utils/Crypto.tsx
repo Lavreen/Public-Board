@@ -2,8 +2,11 @@ import { RSA, KeyPair } from 'react-native-rsa-native';
 import { NativeModules, Platform } from 'react-native'
 import AES from 'react-native-aes-crypto'
 import {Message} from "../redux/MessagesReducer"
+import { postMessage } from "./Api"
 //import { randomBytes } from 'react-native-randombytes'
 //npm i react-native-randombytes
+
+import testData from '../utils/test_keys.json'
 
 export type RawMessage = {
     sign: string | null 
@@ -15,11 +18,10 @@ export type RawMessage = {
 //let MESSAGE_CONTENTS = Aes.encrypt( JSON.stringify(raw_message));
 
 export type EncryptedMessage = {
-    id:   string,
+    id:   number,
     key:  string,  //RSA(AES KEY)
     data: string,  //AES(MESSAGE_CONTENTS) in other words 
-}|
-{
+}|{
     key:  string,  //RSA(AES KEY)
     data: string,  //AES(MESSAGE_CONTENTS) in other words 
 };
@@ -69,8 +71,14 @@ export async function decryptMessage(message: EncryptedMessage, private_key: str
         return msg
     }
     catch(e){
-        console.log(e)
-        return null
+        let msg : Message = {
+            id: message?.id,
+            data: message.data,
+            timestamp: null,
+            source: null,
+            message: null
+        }
+        return msg
     }
 }
 
@@ -98,24 +106,35 @@ export async function test(){
     let keysa : KeyPair = await RSA.generateKeys(2048);
     let keysb : KeyPair = await RSA.generateKeys(2048);
     
-    let it = await generateEncryptedMessage(keysb.public, keysa, message);
-    // console.log("Enc AES-key ", it.key)
-    // console.log("Enc data ", it.data)
-    it['id']=2
-    console.log("klucz A")
-    let msg = await decryptMessage(it, keysa.private)
-    if(msg != null){
-        console.log(JSON.stringify(msg.message))
-    }else{
-        console.log('nie do ciebie')
-    }
+    // let it = await generateEncryptedMessage(keysb.public, keysa, message);
+    // // console.log("Enc AES-key ", it.key)
+    // // console.log("Enc data ", it.data)
+    // it['id']=2
+    // console.log("klucz A")
+    // let msg = await decryptMessage(it, keysa.private)
+    // if(msg != null){
+    //     console.log(JSON.stringify(msg.message))
+    // }else{
+    //     console.log('nie do ciebie')
+    // }
 
-    console.log("klucz B")
-    msg = await decryptMessage(it, keysb.private)
-    if(msg != null){
-        console.log(JSON.stringify(msg.message))
-    }else{
-        console.log('nie do ciebie')
-    }
+    // console.log("klucz B")
+    // msg = await decryptMessage(it, keysb.private)
+    // if(msg != null){
+    //     console.log(JSON.stringify(msg.message))
+    // }else{
+    //     console.log('nie do ciebie')
+    // }
+
+
+    console.log("...")
+    console.log("prywatny")
+    console.log(keysa.private)
+    console.log("...")
+    console.log("publiczny")
+    console.log(keysa.public)
+    console.log("...")
+    
+    // await postMessage(it)
     
 }

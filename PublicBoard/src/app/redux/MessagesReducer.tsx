@@ -1,6 +1,6 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { getLastMessages, getMessageById, postMessage } from '../utils/Api';
-import { EncryptedMessage, generateEncryptedMessage } from '../utils/Crypto';
+import { createAction, createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { getLastMessages, getMessageById, getMessageGtId, postMessage } from '../utils/Api';
+import { EncryptedMessage, generateEncryptedMessage, decryptMessage } from '../utils/Crypto';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../redux/Store';
 
@@ -35,16 +35,24 @@ export const loadStoredMessages = createAsyncThunk(
     }
 );
 
-export const sendMessage = createAsyncThunk(
+export const sendMessage = createAsyncThunk<
+    EncryptedMessage,
+    { text: string, destKey: string },
+    { state: RootState }
+>(
     'messages/sendMessage',
-    async (message: { text: string, destKey: string }) => {
+    async (message: { text: string, destKey: string }, thunkApi) => {
         //todo encrypt message
-        const dispatch = useDispatch();
-        const keys = useSelector((state: RootState) => state.security!.rsa)
-        let encryptedMessage = await generateEncryptedMessage(message.destKey, keys, message.text)
 
+        // const dispatch = useDispatch();
+        // const keys = useSelector((state: RootState) => state.security!.rsa)
+        const keys = thunkApi.getState().security.rsa
+        console.log("try to send")
+        let encryptedMessage = await generateEncryptedMessage(message.destKey, keys, message.text)
+        console.log("po try to send")
         await postMessage(encryptedMessage)
-        
+
+
         return encryptedMessage;
     }
 );
@@ -56,34 +64,50 @@ export const deleteMessages = createAsyncThunk(
     }
 );
 
-export const fetchMessages = createAsyncThunk(
+
+
+export const fetchMessages = createAsyncThunk<
+    Array <Message>,
+    string | void,
+    { state: RootState }
+>(
     'messages/fetchMessages',
-    async () => {
+    async (arg, thunkApi) => {
         //todo get latest message id from SQL Lite
-        // const data = await getMessageById();
-        const data = await getLastMessages();
+        let id = thunkApi.getState().message.id.toString();
+        const data = await getMessageGtId(id);
+        let private_key
+        if(arg)
+            private_key = arg
+        else
+            private_key = thunkApi.getState().security.rsa?.private
+
         let messages: Array<Message> = []
-        //todo decrypt and resolve accruate timestamp and pubkey
-        for (let item of data) {
-            messages.push({
-                id: item.id,
-                data: null,
-                timestamp: item.pub_date,
-                source: null,
-                message: item.message_text
-            });
+
+        if(private_key != null) {
+            for (let item of data) {
+                let decryptedMsg = await decryptMessage(item, private_key)
+                if(decryptedMsg != null){
+                    messages.push(decryptedMsg)
+                }else{
+                    messages.push
+                }
+            }
+        
         }
         return messages;
     }
 );
 
+export const resetMessages = createAction<void>('resetMessages')
 
 export const MessageStoreSlice = createSlice({
     name: "messages",
     initialState: initialState,
     reducers: {},
     extraReducers: (builder) => {
-        builder.addCase(fetchMessages.fulfilled, (state, action) => {
+        builder
+        .addCase(fetchMessages.fulfilled, (state, action) => {
             let maxid = state.id;
             action.payload.forEach(
                 (message) => {
@@ -98,19 +122,19 @@ export const MessageStoreSlice = createSlice({
                 }
             );
         })
-        builder.addCase(deleteMessages.fulfilled, (state, action) => {
+        .addCase(deleteMessages.fulfilled, (state, action) => {
             state.messages = state.messages.filter((msg) => {
                 action.meta.arg.some((id) => { msg.id == id })
             })
         })
-        builder.addCase(loadStoredMessages.fulfilled, (state, action) => {
+        .addCase(loadStoredMessages.fulfilled, (state, action) => {
             state.id = action.payload.id;
             state.selfid = action.payload.selfid;
             action.payload.messages.forEach(
                 (message) => state.messages.push(message)
             );
         })
-        builder.addCase(sendMessage.fulfilled, (state, action) => {
+        .addCase(sendMessage.fulfilled, (state, action) => {
             state.messages.push({
                 id: `SELF-${state.selfid}`,
                 // data: action.payload,
@@ -120,6 +144,10 @@ export const MessageStoreSlice = createSlice({
                 source: 'SELF'
             });
             state.selfid++;
+        })
+        .addCase(resetMessages, (state, action)=>{
+            state.messages = [];
+            state.id = 0;
         })
     }
 });

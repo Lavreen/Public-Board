@@ -3,5 +3,6 @@
     "today": "app_messages/actions/today_messages/",
     "last": "app_messages/actions/last_messages/",
     "byId": "app_messages/actions/",
-    "send": "app_messages/actions/"
+    "send": "app_messages/actions/",
+    "gtId": "app_messages/actions/?id_filter="
 }

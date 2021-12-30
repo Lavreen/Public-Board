@@ -1,13 +1,13 @@
 import React from "react";
 import { View, Button } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { useGetTodayMessages, useGetLastMessages, useGetMessageById } from "../utils/Api";
+import { getLastMessagesFunc, getTodayMessagesFunc, getMessageByIdFunc, useGetTodayMessages, useGetLastMessages, useGetMessageById, getByURL } from "../utils/Api";
 
 export default function MessagesScreen() {
   const navigation = useNavigation();
-  const { data: { results: dataToday }} = useGetTodayMessages();
-  const { data: { results: dataLast }}  = useGetLastMessages();
-  const { data: dataId } = useGetMessageById("1");
+  // const { data: { results: dataToday }} = useGetTodayMessages();
+  // const { data: { results: dataLast }}  = useGetLastMessages();
+  // const { data: dataId } = useGetMessageById("32");
   return (
     <View>
       <Button
@@ -16,15 +16,15 @@ export default function MessagesScreen() {
       ></Button>
       <Button
         title="Test Today"
-        onPress={async () => console.log(dataToday)}
+        onPress={async () => console.log(await getTodayMessagesFunc())}
       ></Button>
       <Button
         title="Test Last"
-        onPress={async () => console.log(dataLast)}
+        onPress={async () => console.log(await getLastMessagesFunc())}
       ></Button>
       <Button
         title="Test Id"
-        onPress={async () => console.log(dataId)}
+        onPress={async () => console.log(await getMessageByIdFunc(30))}
       ></Button>
     </View>
   );

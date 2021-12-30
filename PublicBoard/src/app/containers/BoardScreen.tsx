@@ -12,19 +12,64 @@ import {
 
 import { RootState } from '../redux/Store';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchMessages, Message, sendMessage } from '../redux/MessagesReducer';
+import { fetchMessages, Message, resetMessages, sendMessage } from '../redux/MessagesReducer';
+
+import { constKeys } from '../assets/Keys';
 
 const BoardScreen: FC = () => {
 
     const [messageText, setMessageText] = useState<string>("")
     const messages = useSelector((state: RootState) => state.message.messages);
+    const [selectedPrivateKey, setSelectedPrivateKey] = useState<string>(constKeys.keyA.private);
+    const [selectedKeyName, setSelectedKeyName] = useState<string>("KeyA");
+
     const dispatch = useDispatch();
     const submitMessage = () => {
-        dispatch(sendMessage({ text: messageText, to: 'SELF' }));
+        dispatch(sendMessage({ text: messageText, destKey: constKeys.keyA.private }));
     }
     return (
         <SafeAreaView style={styles.container}>
-            <Button title='fetch messages' onPress={() => dispatch(fetchMessages())}></Button>
+            <Button
+                onPress={() => {
+                    setSelectedPrivateKey(constKeys.keyA.private)
+                    setSelectedKeyName("KeyA")
+                    dispatch(resetMessages())
+                    console.log("KeyA")
+                }}
+                title="KeyA"
+                color = {selectedKeyName=="KeyA" ? "#AA3939" : ""}
+            />
+            <Button
+                onPress={() => {
+                    setSelectedPrivateKey(constKeys.keyB.private)
+                    setSelectedKeyName("KeyB")
+                    dispatch(resetMessages())
+                    console.log("KeyB")
+                }}
+                title="KeyB"
+                color = {selectedKeyName=="KeyB" ? "#AA3939" : ""}
+            />
+            <Button
+                onPress={() => {
+                    setSelectedPrivateKey(constKeys.keyC.private)
+                    setSelectedKeyName("KeyC")
+                    dispatch(resetMessages())
+                    console.log("KeyC")
+                }}
+                title="KeyC"
+                color = {selectedKeyName=="KeyC" ? "#AA3939" : ""}
+            />
+            <Button
+                onPress={() => {
+                    setSelectedPrivateKey(constKeys.keyD.private)
+                    setSelectedKeyName("KeyD")
+                    dispatch(resetMessages())
+                    console.log("KeyD")
+                }}
+                title="KeyD"
+                color = {selectedKeyName=="KeyD" ? "#AA3939" : ""}
+            />
+            <Button title='fetch messages' onPress={() => dispatch(fetchMessages(selectedPrivateKey))}></Button>
             <FlatList
                 data={messages}
                 //temporary cause weird looking animation change to scroll list?
@@ -53,15 +98,15 @@ const MessageItem: FC<Message> = (props) => {
     if (typeof props.id === 'string' && props.id.startsWith('SELF-'))
         return (
             <View style={styles.myMessageItem}>
-                <Text>{props.message}</Text>
-                <Text>{props.data}</Text>
+                <Text style={styles.greenText}>{props.message}</Text>
+                <Text style={styles.redText}>{props.data}</Text>
             </View>
         );
     else
         return (
             <View style={styles.messageItem}>
-                <Text>{props.message}</Text>
-                <Text>{props.data}</Text>
+                <Text style={styles.greenText}>{props.message}</Text>
+                <Text style={styles.redText}>{props.data}</Text>
             </View>
         );
 }
@@ -76,7 +121,8 @@ const styles = StyleSheet.create({
         backgroundColor: "#EEEEEE"
     },
     messageItem: {
-
+        borderBottomColor: "#000000",
+        borderBottomWidth: 2,
     },
     creteMessage: {
         display: "flex",
@@ -100,6 +146,12 @@ const styles = StyleSheet.create({
     textInput: {
         marginLeft: 10,
         color: "black",
+    },
+    redText: {
+        color: "red",
+    },
+    greenText: {
+        color: "green",
     },
 
 });
