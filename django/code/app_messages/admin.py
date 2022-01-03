@@ -8,7 +8,7 @@ class MessageAdmin(admin.ModelAdmin):
     search_fields = ['data']
     list_display = ('data', 'pub_date')
     fieldsets = [
-        (None, {'fields': ['data']}),
+        (None, {'fields': ['data', 'key']}),
         ('Date information', {'fields': ['pub_date'], 'classes': ['collapse']}),
     ]
 
