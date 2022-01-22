@@ -9,10 +9,12 @@ type Friend = {
 
 export type FriendsState = {
     Friends: Array<Friend>
+    max_id: number
 }
 
 const initialState: FriendsState = {
-    Friends: []
+    Friends: [],
+    max_id: 0
 }
 
 export const loadFriends = createAsyncThunk(
@@ -51,6 +53,7 @@ export const FriendsStoreSlice = createSlice({
         })
         builder.addCase(addFriend.fulfilled, (state, action) => {
             state.Friends.push(action.meta.arg);
+            state.max_id += 1;
         })
         builder.addCase(deleteFirend.fulfilled, (state, action) => {
             state.Friends = state.Friends.filter((friend)=>{friend.pubKey != action.meta.arg})
