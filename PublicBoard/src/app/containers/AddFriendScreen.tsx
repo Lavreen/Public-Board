@@ -14,6 +14,8 @@ import {addFriend, Friend} from "../redux/FriendsReducer"
 import { useNavigation } from '@react-navigation/native';
 import { RootState } from '../redux/Store';
 import { useDispatch, useSelector } from 'react-redux';
+import QRCodeScanner from 'react-native-qrcode-scanner';
+import { RNCamera } from 'react-native-camera';
 
 interface Props {
     placeholder: string;
@@ -21,7 +23,61 @@ interface Props {
     onChangeText?: (text: string) => void;
 }
 
+class ScanScreen extends Component {
+   onSuccess = e => {
+     setPubKeyInput(e.data).catch(err =>
+       console.error('An error occured', err)
+     );
+   };
+   onRead = e => {
+      setPubKeyInput(e.data).catch(err =>
+        console.error('An error occured', err)
+      );
+    };
 
+  render() {
+    return (
+      <QRCodeScanner
+        onRead={this.onSuccess}
+        flashMode={RNCamera.Constants.FlashMode.torch}
+        topContent={
+          <Text style={styles.centerText}>
+            Go to{' '}
+            <Text style={styles.textBold}>wikipedia.org/wiki/QR_code</Text> on
+            your computer and scan the QR code.
+          </Text>
+        }
+        bottomContent={
+          <TouchableOpacity style={styles.buttonTouchable}>
+            <Text style={styles.buttonText}>OK. Got it!</Text>
+          </TouchableOpacity>
+        }
+      />
+    );
+  }
+}
+
+// const styles = StyleSheet.create({
+//   centerText: {
+//     flex: 1,
+//     fontSize: 18,
+//     padding: 32,
+//     color: '#777'
+//   },
+//   textBold: {
+//     fontWeight: '500',
+//     color: '#000'
+//   },
+//   buttonText: {
+//     fontSize: 21,
+//     color: 'rgb(0,122,255)'
+//   },
+//   buttonTouchable: {
+//     padding: 16
+//   }
+// });
+
+AppRegistry.registerComponent('default', () => ScanScreen);
 
 
 const AddFriendScreen: FC = () => {
@@ -188,6 +244,11 @@ const Friends: Friend[] =  [
         nickname: "Michał",
         pubKey: "RSA-key-example-4"
     }
+    {
+        id: 5,
+        nickname: "Szymon",
+        pubKey: "RSA-key-example-5"
+    },
 ];
 
 
