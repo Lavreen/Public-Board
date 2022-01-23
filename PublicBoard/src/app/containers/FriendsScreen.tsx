@@ -32,29 +32,26 @@ const FriendsScreen: FC = () => {
     return a.nickname > b.nickname ? 1 : b.nickname > a.nickname ? -1 : 0;
   });
   */
-  /*
-  const handleSearch = (text: string) => {
-    setsearchInput(text)
-    const friends: Friend[] = Friends.filter(friend => 
-        friend.nickname.toLocaleLowerCase().includes(text.toLocaleLowerCase())
-    );
-    //setFriends(friends);
-  };
-  */
- 
+  
+
   return (
     <SafeAreaView style={styles.container} >
       <Input 
           value={searchInput}
           placeholder='search' 
-          //onChangeText={(text) => handleSearch(text)}
+          onChangeText={(text) => setsearchInput(text)}
       />
+  
       <FlatList
           data={friends} 
-          renderItem={
-            ({item}) => (
-              <FriendItem id={item.id} nickname={item.nickname} pubKey={item.pubKey} />
-            )}
+          renderItem={({item})=>{
+              if(item.nickname.startsWith(searchInput)){
+                return(<FriendItem id={item.id} nickname={item.nickname} pubKey={item.pubKey} />)
+              } else {
+                return <View/>
+              }
+           }
+          }
       />
     
       <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("AddFriend")}>

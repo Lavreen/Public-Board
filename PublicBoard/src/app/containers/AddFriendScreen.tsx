@@ -1,12 +1,15 @@
 import React, {FC, useState, useEffect} from 'react';
 import {
   FlatList,
+  AppRegistry,
   SafeAreaView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
   TextInput,
+  Linking,
+  StyleProp,
 } from 'react-native';
 
 import { useWindowDimensions } from 'react-native';
@@ -23,61 +26,34 @@ interface Props {
     onChangeText?: (text: string) => void;
 }
 
-class ScanScreen extends Component {
-   onSuccess = e => {
-     setPubKeyInput(e.data).catch(err =>
-       console.error('An error occured', err)
-     );
-   };
-   onRead = e => {
-      setPubKeyInput(e.data).catch(err =>
-        console.error('An error occured', err)
-      );
-    };
-
-  render() {
-    return (
-      <QRCodeScanner
-        onRead={this.onSuccess}
-        flashMode={RNCamera.Constants.FlashMode.torch}
-        topContent={
-          <Text style={styles.centerText}>
-            Go to{' '}
-            <Text style={styles.textBold}>wikipedia.org/wiki/QR_code</Text> on
-            your computer and scan the QR code.
-          </Text>
-        }
-        bottomContent={
-          <TouchableOpacity style={styles.buttonTouchable}>
-            <Text style={styles.buttonText}>OK. Got it!</Text>
-          </TouchableOpacity>
-        }
-      />
-    );
-  }
+interface Props {
+  placeholder: string;
+  value: string;
+  onChangeText?: (text: string) => void;
 }
 
-// const styles = StyleSheet.create({
-//   centerText: {
-//     flex: 1,
-//     fontSize: 18,
-//     padding: 32,
-//     color: '#777'
-//   },
-//   textBold: {
-//     fontWeight: '500',
-//     color: '#000'
-//   },
-//   buttonText: {
-//     fontSize: 21,
-//     color: 'rgb(0,122,255)'
-//   },
-//   buttonTouchable: {
-//     padding: 16
-//   }
-// });
+function onSuccess(e:any): void {
+  Linking.openURL(e.data).catch(err =>
+    console.error('An error occured', err)
+  );
+};
 
-AppRegistry.registerComponent('default', () => ScanScreen);
+interface CamProps {
+  camStyle: any,
+  myFunction: (arg: string) => void
+}
+
+const ScannerScreen: FC<{props:CamProps}> = ({props}) =>{
+
+  return (
+    <QRCodeScanner cameraStyle={[props.camStyle, {height: "70%"}]}
+      onRead={(e) => {props.myFunction(e.data)}}
+      flashMode={RNCamera.Constants.FlashMode.torch}
+      ratio={"4:3"}
+    />
+  );
+
+}
 
 
 const AddFriendScreen: FC = () => {
@@ -92,6 +68,7 @@ const AddFriendScreen: FC = () => {
   const new_friend_id = useSelector((state: RootState) => state.friends.max_id)
   const window = useWindowDimensions();
 
+  
   const handleAdd = () => {
 
     if(nameInput == "" || pubKeyInput == "") {
@@ -108,6 +85,11 @@ const AddFriendScreen: FC = () => {
     }
     
   };
+
+  let scannerProps : CamProps = {
+    camStyle: styles.qr_view,
+    myFunction: (arg) => {setPubKeyInput(arg)},
+  }
 
   return (
     <SafeAreaView style={styles.container} >
@@ -134,14 +116,17 @@ const AddFriendScreen: FC = () => {
           onChangeText={(text) => setPubKeyInput(text)} 
         />
       </View>
-
-
-    
-      <View style={styles.square}>  
-        <View style={[styles.qr_view, {width: 3*window.width/4, height: 3*window.width/4}]}>
-
-        </View>
+  
+      <View>
+        {/* <View style={styles.camerOverlay}></View> */}
+          <View style={styles.cameraDiv}>
+            <ScannerScreen props={scannerProps}/>
+          </View>
       </View>
+      
+     
+      
+      
 
       <View style={styles.button_container}>
         <TouchableOpacity style={styles.button} onPress={handleAdd}>
@@ -188,15 +173,22 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "600",
   },
-  square: {
-    alignItems: 'center',
+  camerOverlay: {
+    zIndex: 2,
+    position:"absolute",
+    minWidth: 500,
+    minHeight: 20,
+    backgroundColor: "white",
+    left: 0,
+    top: 0,
+  },
+  cameraDiv: {
     flex: 1,
-    justifyContent: 'flex-start',
-    paddingTop: 20,
   },
   qr_view: {
-    borderColor: "red",
-    borderWidth: 10,
+    zIndex: -50,
+    flex: 1,
+    alignSelf: "center",
   }, 
   viewStyle: {
     borderBottomColor: "#3d5c5c",
@@ -221,35 +213,6 @@ const styles = StyleSheet.create({
     color: "#101"
   },
 });
-
-
-const Friends: Friend[] =  [
-    {
-        id: 1,
-        nickname: "Adam",
-        pubKey: "RSA-key-example-1"
-    },
-    {
-        id: 2,
-        nickname: "Wojtek",
-        pubKey: "RSA-key-example-2"
-    },
-    {
-        id: 3,
-        nickname: "Kuba",
-        pubKey: "RSA-key-example-3"
-    },
-    {
-        id: 4,
-        nickname: "Michał",
-        pubKey: "RSA-key-example-4"
-    }
-    {
-        id: 5,
-        nickname: "Szymon",
-        pubKey: "RSA-key-example-5"
-    },
-];
 
 
 export default AddFriendScreen;
