@@ -37,10 +37,11 @@ export default function RootScreen(): JSX.Element | null {
         setTimeout(() => { dispatch(setActive()) }, 2000)
         return (
             <PaperProvider theme={theme}>
-            <Surface style={styles.title}>
-                <Image source={require('../assets/logo.png')}></Image>
-                <Title>Welcome</Title>
-            </Surface>
+                <Surface style={styles.title}>
+                    <Image source={require('../assets/logo.png')}></Image>
+                    <Title>Welcome to...</Title>
+                    <Title>Public Board</Title>
+                </Surface>
             </PaperProvider>
         )
     }
