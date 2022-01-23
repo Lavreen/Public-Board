@@ -20,7 +20,7 @@ export default function HomeScreen() {
             </Surface>
             <Surface style={styles.surface}>
                 <Button mode="contained" onPress={() => navigation.navigate('Messages')}>
-                    Messeges
+                    Messages
                 </Button>
                 <Button mode="contained" onPress={() => navigation.navigate('CreateMessage')}>
                     New message
