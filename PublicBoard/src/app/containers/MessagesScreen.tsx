@@ -1,7 +1,10 @@
 import React from "react";
-import { View, Button } from "react-native";
+import { } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { getLastMessagesFunc, getTodayMessagesFunc, getMessageByIdFunc, useGetTodayMessages, useGetLastMessages, useGetMessageById, getByURL } from "../utils/Api";
+import { Text, TextInput, Surface, Button, DefaultTheme, Provider as PaperProvider, List, Menu, Title } from 'react-native-paper';
+import { theme } from "../assets/paperTheme";
+import { BaseButton } from "react-native-gesture-handler";
 
 export default function MessagesScreen() {
   const navigation = useNavigation();
@@ -9,23 +12,23 @@ export default function MessagesScreen() {
   // const { data: { results: dataLast }}  = useGetLastMessages();
   // const { data: dataId } = useGetMessageById("32");
   return (
-    <View>
+    <PaperProvider theme={theme}>
       <Button
-        title="Go Back"
+        mode="contained"
         onPress={() => navigation.navigate("Home")}
-      ></Button>
+      >Go Back</Button>
       <Button
-        title="Test Today"
+        mode="contained"
         onPress={async () => console.log(await getTodayMessagesFunc())}
-      ></Button>
+      >Test Today</Button>
       <Button
-        title="Test Last"
+        mode="contained"
         onPress={async () => console.log(await getLastMessagesFunc())}
-      ></Button>
+      >Test Last</Button>
       <Button
-        title="Test Id"
+        mode="contained"
         onPress={async () => console.log(await getMessageByIdFunc(30))}
-      ></Button>
-    </View>
+      >Test Id</Button>
+    </PaperProvider>
   );
 }

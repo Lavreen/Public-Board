@@ -2,10 +2,7 @@ import React, { useState, FC, useEffect } from 'react';
 import {
     SafeAreaView,
     View,
-    Text,
     StyleSheet,
-    TextInput,
-    Button,
     TouchableOpacity,
     FlatList,
 } from 'react-native';
@@ -13,8 +10,10 @@ import {
 import { RootState } from '../redux/Store';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchMessages, Message, resetMessages, sendMessage } from '../redux/MessagesReducer';
+import { Text, TextInput, Surface, Button, DefaultTheme, Provider as PaperProvider, List, Menu, Title } from 'react-native-paper';
 
 import { constKeys } from '../assets/Keys';
+import { theme } from '../assets/paperTheme';
 
 const BoardScreen: FC = () => {
 
@@ -28,48 +27,53 @@ const BoardScreen: FC = () => {
         dispatch(sendMessage({ text: messageText, destKey: constKeys.keyA.private }));
     }
     return (
+        <PaperProvider theme={theme}>
         <SafeAreaView style={styles.container}>
-            <Button
+            <Button mode="contained"
                 onPress={() => {
                     setSelectedPrivateKey(constKeys.keyA.private)
                     setSelectedKeyName("KeyA")
                     dispatch(resetMessages())
                     console.log("KeyA")
                 }}
-                title="KeyA"
-                color = {selectedKeyName=="KeyA" ? "#AA3939" : ""}
-            />
-            <Button
+                color = {selectedKeyName=="KeyA" ? "#AA3939" : ""}>
+                KeyA
+                
+            </Button>
+            <Button mode="contained"
                 onPress={() => {
                     setSelectedPrivateKey(constKeys.keyB.private)
                     setSelectedKeyName("KeyB")
                     dispatch(resetMessages())
                     console.log("KeyB")
                 }}
-                title="KeyB"
-                color = {selectedKeyName=="KeyB" ? "#AA3939" : ""}
-            />
-            <Button
+                color = {selectedKeyName=="KeyB" ? "#AA3939" : ""}>
+                    KeyB
+                </Button>
+            <Button mode="contained"
                 onPress={() => {
                     setSelectedPrivateKey(constKeys.keyC.private)
                     setSelectedKeyName("KeyC")
                     dispatch(resetMessages())
                     console.log("KeyC")
                 }}
-                title="KeyC"
-                color = {selectedKeyName=="KeyC" ? "#AA3939" : ""}
-            />
-            <Button
+                color = {selectedKeyName=="KeyC" ? "#AA3939" : ""}>
+                    KeyC
+                </Button>
+            <Button mode="contained"
                 onPress={() => {
                     setSelectedPrivateKey(constKeys.keyD.private)
                     setSelectedKeyName("KeyD")
                     dispatch(resetMessages())
                     console.log("KeyD")
                 }}
-                title="KeyD"
-                color = {selectedKeyName=="KeyD" ? "#AA3939" : ""}
-            />
-            <Button title='fetch messages' onPress={() => dispatch(fetchMessages(selectedPrivateKey))}></Button>
+                color = {selectedKeyName=="KeyD" ? "#AA3939" : ""}>
+                KeyD
+                </Button>
+            <Button mode="contained" onPress={() => dispatch(fetchMessages(selectedPrivateKey))}>
+                fetch Messeges
+            </Button>
+            
             <FlatList
                 data={messages}
                 //temporary cause weird looking animation change to scroll list?
@@ -77,9 +81,12 @@ const BoardScreen: FC = () => {
                 contentContainerStyle={{ flexDirection: 'column-reverse' }}
                 renderItem={({ item }) => (<MessageItem {...item} />)}
             />
+
             <View style={styles.creteMessage}>
                 <View style={styles.viewStyle}>
                     <TextInput
+                        multiline={true}
+                        label="Message content"
                         style={styles.textInput}
                         value={messageText}
                         placeholderTextColor="#555"
@@ -91,6 +98,7 @@ const BoardScreen: FC = () => {
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
+        </PaperProvider>
     );
 }
 

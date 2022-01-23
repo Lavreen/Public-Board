@@ -3,16 +3,16 @@ import {
   FlatList,
   SafeAreaView,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
-  TextInput,
 } from 'react-native';
 
+import { Text, TextInput, Surface, Button, DefaultTheme, Provider as PaperProvider, List, Menu, Title } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { Friend } from "../redux/FriendsReducer"
 import { RootState } from '../redux/Store';
 import { useDispatch, useSelector } from 'react-redux';
+import { theme } from '../assets/paperTheme';
 
 interface Props {
     placeholder: string;
@@ -43,24 +43,31 @@ const FriendsScreen: FC = () => {
   */
  
   return (
-    <SafeAreaView style={styles.container} >
-      <Input 
-          value={searchInput}
-          placeholder='search' 
-          //onChangeText={(text) => handleSearch(text)}
-      />
-      <FlatList
-          data={friends} 
-          renderItem={
-            ({item}) => (
-              <FriendItem id={item.id} nickname={item.nickname} pubKey={item.pubKey} />
-            )}
-      />
-    
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("AddFriend")}>
+    <PaperProvider theme={theme}>
+      <SafeAreaView style={styles.container} >
+        <TextInput 
+            value={searchInput}
+            placeholder='search' 
+            //onChangeText={(text) => handleSearch(text)}
+        />
+        <FlatList
+            data={friends} 
+            renderItem={
+              ({item}) => (
+                <FriendItem id={item.id} nickname={item.nickname} pubKey={item.pubKey} />
+              )}
+        />
+      
+        {/* <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("AddFriend")}>
+          <Text style={styles.buttonText}>Add</Text>
+        </TouchableOpacity> */}
+        <Button mode="contained"
+          style={styles.button}
+          onPress={() => navigation.navigate("AddFriend")}>
         <Text style={styles.buttonText}>Add</Text>
-      </TouchableOpacity>
-    </SafeAreaView>
+                </Button>
+      </SafeAreaView>
+    </PaperProvider>
   );
 };
 
@@ -107,7 +114,6 @@ const styles = StyleSheet.create({
   },
   button: {
     alignSelf: "center",
-    backgroundColor: "#736699",
     padding: 10,
     paddingHorizontal: 20,
     borderRadius: 6,

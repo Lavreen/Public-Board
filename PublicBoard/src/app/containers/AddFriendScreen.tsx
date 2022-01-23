@@ -3,10 +3,8 @@ import {
   FlatList,
   SafeAreaView,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
-  TextInput,
 } from 'react-native';
 
 import { useWindowDimensions } from 'react-native';
@@ -14,6 +12,7 @@ import {addFriend, Friend} from "../redux/FriendsReducer"
 import { useNavigation } from '@react-navigation/native';
 import { RootState } from '../redux/Store';
 import { useDispatch, useSelector } from 'react-redux';
+import { Text, TextInput, Surface, Button, DefaultTheme, Provider as PaperProvider, List, Menu, Title } from 'react-native-paper';
 
 interface Props {
     placeholder: string;
@@ -56,7 +55,7 @@ const AddFriendScreen: FC = () => {
   return (
     <SafeAreaView style={styles.container} >
      
-      <Text
+      <Title
           style={
               {
                 display: warning == false ? "none" : "flex",
@@ -64,7 +63,7 @@ const AddFriendScreen: FC = () => {
               }
             }>
             Please fill every input
-      </Text>
+      </Title>
 
       <View>
         <Input 
