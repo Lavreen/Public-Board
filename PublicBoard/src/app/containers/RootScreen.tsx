@@ -7,7 +7,7 @@ import { loadKeys, setActive, Status } from '../redux/SecurityReducer';
 import MainNavigator from '../navigation/MainNavigator';
 import LoginScreen from './LoginScreen';
 import CreateUserScreeen from './CreateUserScreen';
-import { Text, Surface, Button, DefaultTheme, Provider as PaperProvider, List, Menu, Title } from 'react-native-paper';
+import { Surface, Provider as PaperProvider, Title } from 'react-native-paper';
 import { styles, theme } from '../assets/paperTheme';
 import { loadFriends } from '../redux/FriendsReducer';
 import { loadStoredMessages } from '../redux/MessagesReducer';

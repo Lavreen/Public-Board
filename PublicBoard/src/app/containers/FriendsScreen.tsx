@@ -1,23 +1,21 @@
-import React, {FC, useState, useEffect} from 'react';
+import React, { FC, useState } from 'react';
 import {
   FlatList,
   SafeAreaView,
   StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  TextInput,
+  View
 } from 'react-native';
 
 import { useNavigation } from '@react-navigation/native';
 import { Friend } from "../redux/FriendsReducer"
 import { RootState } from '../redux/Store';
 import { useDispatch, useSelector } from 'react-redux';
+import { Text, Button, TextInput} from 'react-native-paper';
 
 interface Props {
-    placeholder: string;
-    value: string;
-    onChangeText?: (text: string) => void;
+  placeholder: string;
+  value: string;
+  onChangeText?: (text: string) => void;
 }
 
 const FriendsScreen: FC = () => {
@@ -26,74 +24,63 @@ const FriendsScreen: FC = () => {
   const dispatch = useDispatch();
   const friends = useSelector((state: RootState) => state.friends.Friends)
   const [searchInput, setsearchInput] = useState<string>("")
-  
+
   /*
   .sort((a: Friend, b: Friend) => {
     return a.nickname > b.nickname ? 1 : b.nickname > a.nickname ? -1 : 0;
   });
   */
-  
+
 
   return (
     <SafeAreaView style={styles.container} >
-      <Input 
-          value={searchInput}
-          placeholder='search' 
-          onChangeText={(text) => setsearchInput(text)}
+      <TextInput
+        value={searchInput}
+        placeholderTextColor="#555"
+        placeholder={"Search"}
+        onChangeText={setsearchInput}
       />
-  
+
       <FlatList
-          data={friends} 
-          renderItem={({item})=>{
-              if(item.nickname.startsWith(searchInput)){
-                return(<FriendItem id={item.id} nickname={item.nickname} pubKey={item.pubKey} />)
-              } else {
-                return <View/>
-              }
-           }
+        data={friends}
+        renderItem={({ item }) => {
+          if (item.nickname.startsWith(searchInput)) {
+            return (<FriendItem id={item.id} nickname={item.nickname} pubKey={item.pubKey} />)
+          } else {
+            return <View />
           }
+        }
+        }
       />
-    
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("AddFriend")}>
-        <Text style={styles.buttonText}>Add</Text>
-      </TouchableOpacity>
+
+      <Button mode="contained" style={styles.button} onPress={() => navigation.navigate("AddFriend")}>
+        Add
+      </Button>
     </SafeAreaView>
   );
 };
 
-const Input: FC<Props> = (props) => {
-    return (
-        <View style={styles.viewStyle}>
-            <TextInput 
-                style={styles.textInput}
-                value={props.value}
-                placeholderTextColor="#555"
-                placeholder={props.placeholder}
-                onChangeText={props.onChangeText}
-            />
-        </View>
-    );
-};
+
 
 const FriendItem: FC<Friend> = (props) => {
-    return (
-        <View style={styles.friendItem}>
-            <View style={
-            {
-                width: 30,
-                height: 30,
-            }
-            }/>
-            <Text style={styles.textStyle}>
-                {props.pubKey}
-            </Text>
-            <Text style={[styles.textStyle, {
-                marginRight: 10,
-            }]}>
-                {props.nickname}
-            </Text>
-        </View> 
-    )
+  return (
+    <View style={styles.friendItem}>
+      <View style={
+        {
+          width: 30,
+          height: 30,
+        }
+      } />
+      <Text style={styles.textStyle}>
+        {props.pubKey}
+      </Text>
+      <Text style={[styles.textStyle, {
+        marginRight: 10,
+      }]}>
+        {props.nickname}
+      </Text>
+    </View>
+  )
 }
 
 
@@ -103,25 +90,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   button: {
-    alignSelf: "center",
-    backgroundColor: "#736699",
-    padding: 10,
-    paddingHorizontal: 20,
-    borderRadius: 6,
-    marginVertical: 10,
-  },
-  buttonText: {
-    color: "white",
-    fontWeight: "600",
-  },
-  viewStyle: {
-    borderBottomColor: "#3d5c5c",
-    borderBottomWidth: 1,
-    backgroundColor: "#c2d6d6",
-  },
-  textInput: {
-    marginLeft: 10,
-    color: "black",
+    margin: 5
   },
   friendItem: {
     borderBottomColor: "#3d5c5c",

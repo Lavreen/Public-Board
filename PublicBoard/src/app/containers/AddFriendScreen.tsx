@@ -1,15 +1,10 @@
 import React, {FC, useState, useEffect} from 'react';
 import {
-  FlatList,
-  AppRegistry,
   SafeAreaView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
-  TextInput,
   Linking,
-  StyleProp,
 } from 'react-native';
 
 import { useWindowDimensions } from 'react-native';
@@ -19,6 +14,7 @@ import { RootState } from '../redux/Store';
 import { useDispatch, useSelector } from 'react-redux';
 import QRCodeScanner from 'react-native-qrcode-scanner';
 import { RNCamera } from 'react-native-camera';
+import { Button, TextInput } from 'react-native-paper';
 
 interface Props {
     placeholder: string;
@@ -41,15 +37,17 @@ function onSuccess(e:any): void {
 interface CamProps {
   camStyle: any,
   myFunction: (arg: string) => void
+  setCamera: (arg: boolean) => void
 }
 
 const ScannerScreen: FC<{props:CamProps}> = ({props}) =>{
 
   return (
     <QRCodeScanner cameraStyle={[props.camStyle, {height: "70%"}]}
-      onRead={(e) => {props.myFunction(e.data)}}
-      flashMode={RNCamera.Constants.FlashMode.torch}
+      onRead={(e) => {props.myFunction(e.data); props.setCamera(false)}}
+      flashMode={RNCamera.Constants.FlashMode.off}
       ratio={"4:3"}
+      reactivate={true}
     />
   );
 
@@ -67,6 +65,7 @@ const AddFriendScreen: FC = () => {
   const [warning, setWarning] = useState<boolean>(false)
   const new_friend_id = useSelector((state: RootState) => state.friends.max_id)
   const window = useWindowDimensions();
+  const [enableCamera, setEnableCamera] = useState<boolean>(false)
 
   
   const handleAdd = () => {
@@ -89,9 +88,11 @@ const AddFriendScreen: FC = () => {
   let scannerProps : CamProps = {
     camStyle: styles.qr_view,
     myFunction: (arg) => {setPubKeyInput(arg)},
+    setCamera: (arg) => {setEnableCamera(arg)}
   }
 
   return (
+    
     <SafeAreaView style={styles.container} >
      
       <Text
@@ -117,21 +118,26 @@ const AddFriendScreen: FC = () => {
         />
       </View>
   
-      <View>
-        {/* <View style={styles.camerOverlay}></View> */}
-          <View style={styles.cameraDiv}>
+      <View style={{display: enableCamera == false ? "none" : "flex"}}>
+        <View style={styles.camerOverlay}></View>
+          {/* <View style={styles.cameraDiv}> */}
             <ScannerScreen props={scannerProps}/>
-          </View>
+          {/* </View> */}
+      
       </View>
-      
+
+      <View style={{display: enableCamera == true ? "none" : "flex", margin: 10}}>
+            <Button mode="contained" onPress={() => setEnableCamera(true)}>
+                Show Cam
+            </Button>
+      </View>
      
-      
       
 
       <View style={styles.button_container}>
-        <TouchableOpacity style={styles.button} onPress={handleAdd}>
-          <Text style={styles.buttonText}>Add</Text>
-        </TouchableOpacity>
+        <Button mode="contained" onPress={handleAdd}>
+          Add
+        </Button>
       </View>
     </SafeAreaView>
   );
@@ -139,15 +145,12 @@ const AddFriendScreen: FC = () => {
 
 const Input: FC<Props> = (props) => {
     return (
-        <View style={styles.viewStyle}>
-            <TextInput 
-                style={styles.textInput}
-                value={props.value}
-                placeholderTextColor="#555"
-                placeholder={props.placeholder}
-                onChangeText={props.onChangeText}
-            />
-        </View>
+      <TextInput 
+        value={props.value}
+        placeholderTextColor="#555"
+        placeholder={props.placeholder}
+        onChangeText={props.onChangeText}
+      />
     );
 };
 
@@ -160,14 +163,7 @@ const styles = StyleSheet.create({
   button_container: {
     flex: 1,
     justifyContent: 'flex-end',
-    marginBottom: 10
-  },
-  button: {
-    alignSelf: "center",
-    backgroundColor: "#736699",
-    padding: 10,
-    paddingHorizontal: 20,
-    borderRadius: 6,
+    margin: 10
   },
   buttonText: {
     color: "white",
@@ -176,42 +172,17 @@ const styles = StyleSheet.create({
   camerOverlay: {
     zIndex: 2,
     position:"absolute",
-    minWidth: 500,
-    minHeight: 20,
+    width: "100%",
+    minHeight: 30,
     backgroundColor: "white",
     left: 0,
     top: 0,
-  },
-  cameraDiv: {
-    flex: 1,
   },
   qr_view: {
     zIndex: -50,
     flex: 1,
     alignSelf: "center",
   }, 
-  viewStyle: {
-    borderBottomColor: "#3d5c5c",
-    borderBottomWidth: 1,
-    backgroundColor: "#c2d6d6",
-  },
-  textInput: {
-    marginLeft: 10,
-    color: "black",
-  },
-  friendItem: {
-    borderBottomColor: "#3d5c5c",
-    borderBottomWidth: 2,
-    display: "flex",
-    flexDirection: "row",
-    justifyContent: "space-between"
-  },
-  textStyle: {
-    textAlign: "left",
-    fontSize: 30,
-    marginLeft: 10,
-    color: "#101"
-  },
 });
 
 
