@@ -9,6 +9,8 @@ import LoginScreen from './LoginScreen';
 import CreateUserScreeen from './CreateUserScreen';
 import { Text, Surface, Button, DefaultTheme, Provider as PaperProvider, List, Menu, Title } from 'react-native-paper';
 import { styles, theme } from '../assets/paperTheme';
+import { loadFriends } from '../redux/FriendsReducer';
+import { loadStoredMessages } from '../redux/MessagesReducer';
 
 export default function RootScreen(): JSX.Element | null {
     const status = useSelector((state: RootState) => state.security.status)
@@ -34,6 +36,8 @@ export default function RootScreen(): JSX.Element | null {
         return (<LoginScreen></LoginScreen>)
 
     if (status == Status.Loaded) {
+        dispatch(loadFriends())
+        dispatch(loadStoredMessages())
         setTimeout(() => { dispatch(setActive()) }, 2000)
         return (
             <PaperProvider theme={theme}>
