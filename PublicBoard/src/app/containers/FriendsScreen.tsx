@@ -1,45 +1,37 @@
-import React, { FC, useState } from 'react';
+import React, { FC, useEffect, useState} from 'react';
 import {
   FlatList,
   SafeAreaView,
   StyleSheet,
+  Text as RNText,
+  TouchableOpacity,
   View
 } from 'react-native';
 
 import { useNavigation } from '@react-navigation/native';
 import { Friend } from "../redux/FriendsReducer"
 import { RootState } from '../redux/Store';
-import { useDispatch, useSelector } from 'react-redux';
-import { Text, Button, TextInput} from 'react-native-paper';
+import { useSelector } from 'react-redux';
+import { List, Button, TextInput} from 'react-native-paper';
 
-interface Props {
-  placeholder: string;
-  value: string;
-  onChangeText?: (text: string) => void;
-}
 
 const FriendsScreen: FC = () => {
 
   const navigation = useNavigation();
-  const dispatch = useDispatch();
   const friends = useSelector((state: RootState) => state.friends.Friends)
   const [searchInput, setsearchInput] = useState<string>("")
 
-  /*
-  .sort((a: Friend, b: Friend) => {
-    return a.nickname > b.nickname ? 1 : b.nickname > a.nickname ? -1 : 0;
-  });
-  */
-
-
   return (
     <SafeAreaView style={styles.container} >
+
       <TextInput
         value={searchInput}
         placeholderTextColor="#555"
         placeholder={"Search"}
         onChangeText={setsearchInput}
+        style={{height: 50}}
       />
+
 
       <FlatList
         data={friends}
@@ -62,24 +54,40 @@ const FriendsScreen: FC = () => {
 
 
 
-const FriendItem: FC<Friend> = (props) => {
+function getRandomColor (arg: String) {
+
+  let valueToAdd = 0;
+  for (let i = 0; i < arg.length; i++) {
+    valueToAdd += arg.charCodeAt(i);
+  }
+  
+  return 'rgba(' + String((240+valueToAdd)%256) + ',' 
+  + String((230+valueToAdd)%256) + ',' 
+  + String((140+valueToAdd)%256) + ',' + '0.6' + ')'; 
+}
+
+const IconWithName: FC<{nickname: String}> = (props) => {
+
   return (
-    <View style={styles.friendItem}>
-      <View style={
-        {
-          width: 30,
-          height: 30,
-        }
-      } />
-      <Text style={styles.textStyle}>
-        {props.pubKey}
-      </Text>
-      <Text style={[styles.textStyle, {
-        marginRight: 10,
-      }]}>
-        {props.nickname}
-      </Text>
-    </View>
+    <TouchableOpacity
+      style={[styles.roundButton, {backgroundColor: getRandomColor(props.nickname)}]}
+    >
+    <RNText style={{fontSize: 30, color: "white"}}>{props.nickname.charAt(0)}</RNText>
+    </TouchableOpacity>
+  )
+}
+
+
+const FriendItem: FC<Friend> = (props) => {
+
+  return (
+    <List.Item
+    title={props.nickname}
+    description={props.pubKey}
+    left={() => <IconWithName nickname={
+      props.nickname.concat(props.pubKey.charAt(0))
+    } ></IconWithName>}
+    />
   )
 }
 
@@ -105,6 +113,19 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     color: "#101"
   },
+  roundButton: {
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 60,
+    right: 10,
+    left: 3,
+    height: 60,
+    fontWeight: "bold",
+    backgroundColor: '#fff',
+    borderRadius: 100,
+  }
 });
 
 export default FriendsScreen;

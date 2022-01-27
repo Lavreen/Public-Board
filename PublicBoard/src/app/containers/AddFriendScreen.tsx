@@ -1,4 +1,4 @@
-import React, {FC, useState, useEffect} from 'react';
+import React, { FC, useState } from 'react';
 import {
   SafeAreaView,
   StyleSheet,
@@ -7,7 +7,6 @@ import {
   Linking,
 } from 'react-native';
 
-import { useWindowDimensions } from 'react-native';
 import {addFriend, Friend} from "../redux/FriendsReducer"
 import { useNavigation } from '@react-navigation/native';
 import { RootState } from '../redux/Store';
@@ -58,13 +57,9 @@ const AddFriendScreen: FC = () => {
 
   const navigation = useNavigation();
   const dispatch = useDispatch();
-  const [inputShown, setInputShown] = useState<boolean>(false)
-  const [searchInput, setsearchInput] = useState<string>("")
   const [nameInput, setNameInput] = useState<string>("")
   const [pubKeyInput, setPubKeyInput] = useState<string>("")
   const [warning, setWarning] = useState<boolean>(false)
-  const new_friend_id = useSelector((state: RootState) => state.friends.max_id)
-  const window = useWindowDimensions();
   const [enableCamera, setEnableCamera] = useState<boolean>(false)
 
   
@@ -75,10 +70,9 @@ const AddFriendScreen: FC = () => {
       setTimeout(() => setWarning(false), 3000);
       setNameInput("")
       setPubKeyInput("")
-      setInputShown(false)
     }
     else {
-      let newFriend: Friend = {id: new_friend_id, nickname: nameInput, pubKey: pubKeyInput};
+      let newFriend: Friend = {id: null, nickname: nameInput, pubKey: pubKeyInput};
       dispatch(addFriend(newFriend))
       navigation.goBack();
     }

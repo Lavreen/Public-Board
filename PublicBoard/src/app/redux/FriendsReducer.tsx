@@ -3,19 +3,17 @@ import LocalStorage from '../utils/LocalStoreage';
 import { RootState } from './Store';
 
 type Friend = {
-    id: number,
+    id: number | null,
     nickname: string,
     pubKey: string
 }
 
 export type FriendsState = {
     Friends: Array<Friend>
-    max_id: number
 }
 
 const initialState: FriendsState = {
     Friends: [],
-    max_id: 0
 }
 
 export const loadFriends = createAsyncThunk<
@@ -47,7 +45,7 @@ export const addFriend = createAsyncThunk<
         let database_key = thunkApi.getState().security.database
         if (database_key != null) {
             let database = await LocalStorage.getStorage(database_key);
-            await database.saveFriend(friend.pubKey, friend.nickname, friend.id);
+            await database.saveFriend(friend.pubKey, friend.nickname);
         }
 
     }
@@ -72,7 +70,9 @@ export const FriendsStoreSlice = createSlice({
         })
         builder.addCase(addFriend.fulfilled, (state, action) => {
             state.Friends.push(action.meta.arg);
-            state.max_id += 1;
+            state.Friends.sort((a: Friend, b: Friend) => {
+                return a.nickname.localeCompare(b.nickname);
+            })
         })
         builder.addCase(deleteFirend.fulfilled, (state, action) => {
             state.Friends = state.Friends.filter((friend) => { friend.pubKey != action.meta.arg })

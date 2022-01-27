@@ -18,7 +18,7 @@ export default class LocalStorage {
                         CREATE TABLE IF NOT EXISTS friends(
                             pubKey      TEXT NOT NULL PRIMARY KEY,
                             nickname        TEXT NOT NULL,
-                            id          INTEGER
+                            id          INTEGER AUTO_INCREMENT
                         );
                         `
                     );
@@ -69,12 +69,12 @@ export default class LocalStorage {
         )
     }
 
-    async saveFriend(pubKey: string, name: string, id: number) {
+    async saveFriend(pubKey: string, name: string) {
         await this._db?.transaction(
             async (tx) => {
                 await tx.executeSql(
-                    'INSERT INTO friends (pubKey, nickname, id) VALUES (?,?,?);',
-                    [pubKey, name, id]
+                    'INSERT INTO friends (pubKey, nickname) VALUES (?,?);',
+                    [pubKey, name]
                 );
             }
         )
@@ -140,7 +140,7 @@ export default class LocalStorage {
         return new Promise<Array<Friend>>((resolve, reject) => {
             this._db?.transaction((tx) => {
                 tx.executeSql(
-                    'SELECT * FROM friends;',
+                    'SELECT * FROM friends ORDER BY LENGTH(nickname), nickname ASC;',
                     [],
                     (tx, results) => {
                         let friends: Array<Friend> = [];
