@@ -148,7 +148,7 @@ export async function getByURL(url: string, id: null | number) {
   }
 }
 
-export async function postMessage(textData: EncryptedMessage) {
+export async function postMessage(textData: EncryptedMessage): Promise<number> {
   // const [data, setData] = useState<Message[]>([]);
   // const [loading, setLoading] = useState<boolean>(true);
   // const [error, setError] = useState<null | Error>(null);
@@ -165,13 +165,14 @@ export async function postMessage(textData: EncryptedMessage) {
       "Content-Type": "application/x-www-form-urlencoded",
     },
   };
-  console.log("SENT: " + JSON.stringify(data, null, 2));
+  // console.log("SENT: " + JSON.stringify(data, null, 2));
   try {
     const res = await fetch(SEND_MESSAGE_URL, data);
     const ret = await res.json();
-
-    console.log(ret)
+    let id = ret.new_id;
+    return id;
   } catch (err) {
     console.error(err);
   }
+  return -1;
 }

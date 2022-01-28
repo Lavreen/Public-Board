@@ -47,7 +47,6 @@ export const addFriend = createAsyncThunk<
             let database = await LocalStorage.getStorage(database_key);
             await database.saveFriend(friend.pubKey, friend.nickname);
         }
-
     }
 );
 
