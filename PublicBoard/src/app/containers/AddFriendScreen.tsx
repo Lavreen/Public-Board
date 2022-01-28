@@ -27,12 +27,6 @@ interface Props {
   onChangeText?: (text: string) => void;
 }
 
-function onSuccess(e:any): void {
-  Linking.openURL(e.data).catch(err =>
-    console.error('An error occured', err)
-  );
-};
-
 interface CamProps {
   camStyle: any,
   myFunction: (arg: string) => void

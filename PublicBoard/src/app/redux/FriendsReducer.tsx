@@ -35,19 +35,20 @@ void,
 );
 
 export const addFriend = createAsyncThunk<
-    void,
+    number|null,
     Friend,
     { state: RootState }
 >(
-    'friends/addFirend',
+    'friends/addFriend',
     async (friend, thunkApi) => {
+        let id: number|null = null
         console.log(friend)
         let database_key = thunkApi.getState().security.database
         if (database_key != null) {
             let database = await LocalStorage.getStorage(database_key);
-            await database.saveFriend(friend.pubKey, friend.nickname);
+            id = await database.saveFriend(friend.pubKey, friend.nickname);  
         }
-
+       return id
     }
 );
 
@@ -69,7 +70,10 @@ export const FriendsStoreSlice = createSlice({
             );
         })
         builder.addCase(addFriend.fulfilled, (state, action) => {
-            state.Friends.push(action.meta.arg);
+            let tmp: Friend = action.meta.arg
+            tmp.id = action.payload
+            state.Friends.push(tmp);
+            console.log("I am adding: ", tmp)
             state.Friends.sort((a: Friend, b: Friend) => {
                 return a.nickname.localeCompare(b.nickname);
             })

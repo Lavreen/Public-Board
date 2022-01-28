@@ -21,17 +21,20 @@ export default function HomeScreen() {
             <Title>Public Board</Title>
             </Surface>
             <Surface style={styles.surface}>
-                <Button mode="contained" style={styles.homeScreenButton} onPress={() => navigation.navigate('Messages')}>
+                {/* <Button mode="contained" style={styles.homeScreenButton} onPress={() => navigation.navigate('Messages')}>
                     Messages
-                </Button>
-                <Button mode="contained" style={styles.homeScreenButton} onPress={() => navigation.navigate('CreateMessage')}>
+                </Button> */}
+                {/* <Button mode="contained" style={styles.homeScreenButton} onPress={() => navigation.navigate('CreateMessage')}>
                     New message
+                </Button> */}
+                <Button mode="contained" style={styles.homeScreenButton} onPress={() => navigation.navigate('Board')}>
+                Board
                 </Button>
                 <Button mode="contained" style={styles.homeScreenButton} onPress={() => navigation.navigate('Friends')}>
                 Friends
                 </Button>
-                <Button mode="contained" style={styles.homeScreenButton} onPress={() => navigation.navigate('Board')}>
-                Board
+                <Button mode="contained" style={styles.homeScreenButton} onPress={() => navigation.navigate('Profile')}>
+                Profile
                 </Button>
                 <Button mode="contained" style={styles.homeScreenButton} onPress={() => dispatch(deleteData())}>
                 Wipe Data

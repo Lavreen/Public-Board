@@ -1,39 +1,45 @@
 import { createAction, createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { getLastMessages, getMessageById, getMessageGtId, postMessage } from '../utils/Api';
-import { EncryptedMessage, generateEncryptedMessage, decryptMessage } from '../utils/Crypto';
-import { useDispatch, useSelector } from 'react-redux';
+import { getMessageGtId, postMessage } from '../utils/Api';
+import { generateEncryptedMessage, decryptMessage } from '../utils/Crypto';
 import { RootState } from '../redux/Store';
 import LocalStorage from '../utils/LocalStoreage';
 
 export type Message = {
-    id: string,
+    id: number,
     data: string | null,
     timestamp: string | null
     source: string | null
     message: string | null
+    self: boolean
 }
 
 export type MessagesState = {
     messages: Array<Message>,
     id: number,
-    selfid: number
+    fetchActive: boolean,
+    sendActive: boolean
 }
 
 const initialState: MessagesState = {
     messages: [],
     id: 0,
-    selfid: 0
+    fetchActive: false,
+    sendActive: false
 }
 
+export const resetMessages = createAction<void>('resetMessages')
+export const setFetchState = createAction<boolean>('setFetchState')
+export const setSendState = createAction<boolean>('setSendState')
+
 export const loadStoredMessages = createAsyncThunk<
-    { messages: Array<Message>, id: number, selfid: number },
+    Array<Message>,
     void,
     { state: RootState }
 >(
     'messages/loadStoredMessages',
     async (arg, thunkApi) => {
         let messages: Array<Message> = []
-        let id = 0, selfid = 0;
+        let id = 0;
 
         let database_key = thunkApi.getState().security.database
         if (database_key != null) {
@@ -41,30 +47,43 @@ export const loadStoredMessages = createAsyncThunk<
             messages = await database.getMessages(null);
             //todo get last message id and last sent message id
         }
-        return { messages: messages, id: id, selfid: selfid }
+        return messages
     }
 );
 
 export const sendMessage = createAsyncThunk<
-    EncryptedMessage,
-    { text: string, destKey: string },
+    number,
+    { text: string, destKeys: Array<string> },
     { state: RootState }
 >(
     'messages/sendMessage',
-    async (message: { text: string, destKey: string }, thunkApi) => {
-        const keys = thunkApi.getState().security.rsa
-        console.log("try to send")
-        let encryptedMessage = await generateEncryptedMessage(message.destKey, keys, message.text)
-        console.log("po try to send")
-        await postMessage(encryptedMessage)
+    async (message: { text: string, destKeys: Array<string> }, thunkApi) => {
+        thunkApi.dispatch(setSendState(true))
+        await thunkApi.dispatch(fetchMessages())
+        
+        const keys = thunkApi.getState().security.rsa;
+        let id = -1;
 
-        return encryptedMessage;
+        let database_key = thunkApi.getState().security.database
+        if (database_key != null) {
+            
+            for (let destKey of message.destKeys) {
+                let encryptedMessage = await generateEncryptedMessage(destKey, keys, message.text);
+                id = await postMessage(encryptedMessage);
+            }
+            if (id != -1) {
+                let database = await LocalStorage.getStorage(database_key)
+                await database.saveMessage(id, "", "self", true, message.text)
+            }
+        }
+        thunkApi.dispatch(setSendState(false))
+        return id;
     }
 );
 
 export const deleteMessages = createAsyncThunk(
     'messages/deleteMessages',
-    async (ids: Array<string>) => {
+    async (ids: Array<number>) => {
         //todo SQL Lite remove
     }
 );
@@ -72,51 +91,62 @@ export const deleteMessages = createAsyncThunk(
 
 
 export const fetchMessages = createAsyncThunk<
-    Array<Message>,
+    { messages: Array<Message>, maxid: number },
     string | void,
     { state: RootState }
 >(
     'messages/fetchMessages',
     async (arg, thunkApi) => {
-        let messages: Array<Message> = []
-        let database_key = thunkApi.getState().security.database
+        thunkApi.dispatch(setFetchState(true))
+        let messages: Array<Message> = [];
 
+        let maxid = 0;
+
+        let database_key = thunkApi.getState().security.database
         if (database_key != null) {
             let database = await LocalStorage.getStorage(database_key)
-
-            //todo get latest message id from SQL Lite
-            let id = thunkApi.getState().message.id.toString();
-            const data = await getMessageGtId(id);
+            let id = thunkApi.getState().message.id + 1
+            console.log(`Fething messages from ${id}`)
+            const data = await getMessageGtId(id.toString());
+            console.log(`Fetched ${data.length} messages`)
             let private_key
             if (arg)
                 private_key = arg
             else
                 private_key = thunkApi.getState().security.rsa?.private
 
-
             if (private_key != null) {
+                let friends = thunkApi.getState().friends.Friends;
                 for (let item of data) {
+                    if (item.id > maxid)
+                        maxid = item.id
+
                     let decryptedMsg = await decryptMessage(item, private_key)
+
                     if (decryptedMsg != null && decryptedMsg.message != null) {
-                        messages.push(decryptedMsg)
-                        //todo timestamps source when null
                         let source = decryptedMsg.source
-                        if (source == null) source = ""
-                        let timestamp = decryptedMsg.source
-                        if (timestamp == null) timestamp = ""
-                        await database.saveMessage(decryptedMsg.id, timestamp, source, false, decryptedMsg.message)
+                        if (source == null) source = "unknown"
+                        //todo validate message (check if signed correctly)
+                        //if not set source to unknown
+                        await database.saveMessage(decryptedMsg.id, "", source, false, decryptedMsg.message)
+                        for(let friend of friends){
+                            if(friend.pubKey == decryptedMsg.source){
+                                decryptedMsg.source = friend.nickname
+                                break;
+                            }
+                        }
+                        messages.push(decryptedMsg)
                     } else {
-                        messages.push
+                        messages.push(item)
                     }
                 }
 
             }
         }
-        return messages;
+        thunkApi.dispatch(setFetchState(false))
+        return { messages: messages, maxid: maxid };
     }
 );
-
-export const resetMessages = createAction<void>('resetMessages')
 
 export const MessageStoreSlice = createSlice({
     name: "messages",
@@ -125,19 +155,11 @@ export const MessageStoreSlice = createSlice({
     extraReducers: (builder) => {
         builder
             .addCase(fetchMessages.fulfilled, (state, action) => {
-                let maxid = state.id;
-                action.payload.forEach(
-                    (message) => {
-                        //fech from id not yet implemented need guard
-                        if (state.id < (+message.id)) {
-                            state.messages.push(message)
-                        }
-                        if ((+message.id) > maxid) {
-                            maxid = (+message.id);
-                        }
-                        state.id = maxid
-                    }
-                );
+                action.payload.messages.forEach((message) => {
+                    state.messages.push(message);
+                });
+                if (action.payload.maxid > state.id)
+                    state.id = action.payload.maxid;
             })
             .addCase(deleteMessages.fulfilled, (state, action) => {
                 state.messages = state.messages.filter((msg) => {
@@ -145,26 +167,36 @@ export const MessageStoreSlice = createSlice({
                 })
             })
             .addCase(loadStoredMessages.fulfilled, (state, action) => {
-                state.id = action.payload.id;
-                state.selfid = action.payload.selfid;
-                action.payload.messages.forEach(
-                    (message) => state.messages.push(message)
-                );
+                action.payload.forEach((message) => {
+                    state.messages.push(message)
+                    if (+message.id > state.id)
+                        state.id = (+message.id)
+                });
+                console.log(`Loaded ${action.payload.length} messeges. Max id ${state.id}`)
             })
             .addCase(sendMessage.fulfilled, (state, action) => {
-                state.messages.push({
-                    id: `SELF-${state.selfid}`,
-                    // data: action.payload,
-                    data: null,
-                    message: action.meta.arg.text,
-                    timestamp: null,
-                    source: 'SELF'
-                });
-                state.selfid++;
+                console.log("fullfiled ", action.payload)
+                if (action.payload != -1) {
+                    state.messages.push({
+                        id: action.payload,
+                        data: null,
+                        message: action.meta.arg.text,
+                        timestamp: null,
+                        source: 'You',
+                        self: true
+                    });
+                    state.id = action.payload;
+                }
             })
             .addCase(resetMessages, (state, action) => {
                 state.messages = [];
                 state.id = 0;
+            })
+            .addCase(setFetchState, (state, action) => {
+                state.fetchActive = action.payload;
+            })
+            .addCase(setSendState, (state, action) => {
+                state.sendActive = action.payload;
             })
     }
 });

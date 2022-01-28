@@ -18,23 +18,32 @@ export default class LocalStorage {
                         CREATE TABLE IF NOT EXISTS friends(
                             pubKey      TEXT NOT NULL PRIMARY KEY,
                             nickname        TEXT NOT NULL,
-                            id          INTEGER AUTO_INCREMENT
+                            id          INTEGER
                         );
                         `
                     );
                     await tx.executeSql(
                         `
                         CREATE TABLE IF NOT EXISTS messages(
-                            id          TEXT PRIMARY KEY,
+                            id          INTEGER PRIMARY KEY,
                             timestamp   TEXT,
                             source      TEXT,
-                            user        INTEGER,
+                            self        INTEGER,
                             message     TEXT,
                             FOREIGN KEY(source) REFERENCES friends(pubkey)
                         );
                         `
                     );
-
+                    await tx.executeSql(
+                        `
+                        INSERT INTO friends (pubKey, nickname) VALUES ("unknown", "Unknown Source");                        
+                        `
+                    );
+                    await tx.executeSql(
+                        `
+                        INSERT INTO friends (pubKey, nickname) VALUES ("self", "You");
+                        `
+                    )
                 })
             return this.instance;
         } else {
@@ -58,26 +67,42 @@ export default class LocalStorage {
 
     }
 
-    async saveMessage(id: string, timestamp: string, source: string, user: boolean, message: string) {
+    async saveMessage(id: number, timestamp: string, source: string, self: boolean, message: string) {
         await this._db?.transaction(
             async (tx) => {
                 await tx.executeSql(
-                    'INSERT INTO messages (id, timestamp, source, user, message) VALUES (?,?,?,?,?);',
-                    [id, timestamp, source, user, message]
+                    'INSERT INTO messages (id, timestamp, source, self, message) VALUES (?,?,?,?,?);',
+                    [id, timestamp, source, self, message]
                 );
             }
         )
     }
 
     async saveFriend(pubKey: string, name: string) {
-        await this._db?.transaction(
+        return new Promise<number>(async (resolve, reject) => {
+         let lastId: number
+         await this._db?.transaction(
             async (tx) => {
-                await tx.executeSql(
-                    'INSERT INTO friends (pubKey, nickname) VALUES (?,?);',
-                    [pubKey, name]
-                );
+                
+                tx.executeSql(
+                    'SELECT id FROM friends ORDER BY id DESC LIMIT 1;',
+                    [],
+                    (tx, results) => {
+                        lastId = results.rows.item(0).id+1
+                        tx.executeSql(
+                            'INSERT INTO friends (id, pubKey, nickname) VALUES (?, ?,?);',
+                            [lastId, pubKey, name],
+                        );
+                        resolve(lastId)
+                    },
+                    (error) => {
+                        console.log("Database id select error", error);
+                        reject(error)
+                    }
+                ) 
             }
         )
+        })
     }
 
     getMessages(user: string | null) {
@@ -85,25 +110,26 @@ export default class LocalStorage {
             this._db?.transaction((tx) => {
                 if (user == null) {
                     tx.executeSql(
-                        'SELECT id, timestamp, source, user, message FROM messages;',
+                        'SELECT messages.id, timestamp, nickname, self, message FROM messages INNER JOIN friends ON messages.source=friends.pubkey;',
                         [],
                         (tx, results) => {
                             let messages: Array<Message> = [];
                             for (let i = 0; i < results.rows.length; i++) {
                                 let item = results.rows.item(i)
-                                //todo add user to Message type to distinct user messages
+                                console.log(item)
                                 messages.push({
                                     id: item.id,
                                     data: null,
                                     timestamp: item.timestamp,
-                                    source: item.source,
-                                    message: item.message
+                                    source: item.nickname,
+                                    message: item.message,
+                                    self: item.self
                                 });
                             }
                             resolve(messages)
                         },
                         (error) => {
-                            console.log("Database load error");
+                            console.log("Database load error", error);
                             reject(error)
                         }
                     );
@@ -121,7 +147,8 @@ export default class LocalStorage {
                                     data: null,
                                     timestamp: item.timestamp,
                                     source: item.source,
-                                    message: item.message
+                                    message: item.message,
+                                    self: item.self
                                 });
                             }
                             resolve(messages)
@@ -140,7 +167,7 @@ export default class LocalStorage {
         return new Promise<Array<Friend>>((resolve, reject) => {
             this._db?.transaction((tx) => {
                 tx.executeSql(
-                    'SELECT * FROM friends ORDER BY LENGTH(nickname), nickname ASC;',
+                    'SELECT * FROM friends WHERE length(pubkey)>10 ORDER BY LENGTH(nickname), nickname ASC;',
                     [],
                     (tx, results) => {
                         let friends: Array<Friend> = [];
