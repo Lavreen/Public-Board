@@ -66,7 +66,7 @@ const AddFriendScreen: FC = () => {
   };
 
   const handleAdd = async () => {
-
+            
     if(nameInput == "" || pubKeyInput == "") {
       setWarningText("Please fill every input")
       setTimeout(() => setWarningText(""), 3000);

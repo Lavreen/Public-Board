@@ -3,8 +3,9 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 import { KeyPair, RSA } from 'react-native-rsa-native';
 import AES from 'react-native-aes-crypto';
 import { RootState } from './Store';
-import { loadFriends } from './FriendsReducer';
+import { loadFriends, resetFriends } from './FriendsReducer';
 import LocalStorage from '../utils/LocalStoreage';
+import { resetMessages } from './MessagesReducer';
 
 //todo Setup aes rsa native code
 export enum Status { Active, Initial, Missing, Login, LoginError, Loaded }
@@ -22,7 +23,7 @@ const initialState: SecurityState = {
 
 export const setActive = createAction<void>('setActive')
 
-const resetReducer = createAction<void>('resetReducer')
+export const resetSecurity = createAction<void>('resetSecurity')
 
 
 export const deleteData = createAsyncThunk<
@@ -37,7 +38,9 @@ export const deleteData = createAsyncThunk<
             await LocalStorage.dropStorage(database_key);
         }
         EncryptedStorage.removeItem('PublicBoardStore').then(() => {
-            thunkApi.dispatch(resetReducer());
+            thunkApi.dispatch(resetMessages());
+            thunkApi.dispatch(resetFriends());
+            thunkApi.dispatch(resetSecurity());
         });
         console.log("done")
     }
@@ -126,7 +129,7 @@ export const SecurityStoreSlice = createSlice({
                 state.rsa = { private: action.payload.rsa_keys.private, public: action.payload.rsa_keys.public };
                 state.database = action.payload.database_key;
             })
-            .addCase(resetReducer, (state, action) => {
+            .addCase(resetSecurity, (state, action) => {
                 state.status = Status.Initial;
                 state.rsa = null;
                 state.database = null;

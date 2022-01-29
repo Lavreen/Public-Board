@@ -27,6 +27,7 @@ export default class LocalStorage {
                         CREATE TABLE IF NOT EXISTS messages(
                             id          INTEGER PRIMARY KEY,
                             timestamp   TEXT,
+                            dest        TEXT,
                             source      TEXT,
                             self        INTEGER,
                             message     TEXT,

@@ -68,7 +68,6 @@ const BoardScreen: FC = () => {
         }
     }
 
-
     return (
         <PaperProvider theme={theme}>
             <Appbar.Header>
