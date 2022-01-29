@@ -78,6 +78,29 @@ export default class LocalStorage {
         )
     }
 
+    async checkPubKey(pubKey: string) {
+        return new Promise<number>(async (resolve, reject) => {
+            let ifExists: number
+            await this._db?.transaction(
+                async (tx) => {
+                    tx.executeSql(
+                        'SELECT COUNT(*) as IfExists FROM friends WHERE pubKey = ?;',
+                        [pubKey],
+                        (tx, results) => {
+                            resolve(results.rows.item(0).IfExists)
+                        },
+                        (error) => {
+                            console.log("Database pubKey select error", error);
+                            reject(error)
+                        }
+                    )
+                }   
+            )
+            
+        })
+    }
+    
+
     async saveFriend(pubKey: string, name: string) {
         return new Promise<number>(async (resolve, reject) => {
          let lastId: number

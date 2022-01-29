@@ -34,6 +34,28 @@ void,
     }
 );
 
+
+export const checkPubKey = createAsyncThunk<
+boolean,
+string,
+{state: RootState}
+>(
+    'friends/checkKey',
+    async (pubKey, thunkApi) => {
+        let ifExists: number = 0
+        let database_key = thunkApi.getState().security.database
+        if (database_key != null) {
+            let database = await LocalStorage.getStorage(database_key);
+            ifExists = await database.checkPubKey(pubKey);  
+        }
+        if(ifExists == 0)
+            return false
+        else
+            return true
+    }
+
+)
+
 export const addFriend = createAsyncThunk<
     number|null,
     Friend,
@@ -69,11 +91,13 @@ export const FriendsStoreSlice = createSlice({
                 (friend) => state.Friends.push(friend)
             );
         })
+        builder.addCase(checkPubKey.fulfilled, (state, action) => {
+            
+        })
         builder.addCase(addFriend.fulfilled, (state, action) => {
             let tmp: Friend = action.meta.arg
             tmp.id = action.payload
             state.Friends.push(tmp);
-            console.log("I am adding: ", tmp)
             state.Friends.sort((a: Friend, b: Friend) => {
                 return a.nickname.localeCompare(b.nickname);
             })
