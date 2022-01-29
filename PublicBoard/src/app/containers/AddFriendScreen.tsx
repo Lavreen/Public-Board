@@ -62,7 +62,7 @@ const AddFriendScreen: FC = () => {
   const [warning, setWarning] = useState<boolean>(false)
   const [enableCamera, setEnableCamera] = useState<boolean>(false)
 
-  
+  //todo ban nicknames: unknown self board
   const handleAdd = () => {
 
     if(nameInput == "" || pubKeyInput == "") {

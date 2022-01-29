@@ -8,20 +8,25 @@ export type Message = {
     id: number,
     data: string | null,
     timestamp: string | null
+    dest: string | null,
     source: string | null
     message: string | null
     self: boolean
 }
 
 export type MessagesState = {
-    messages: Array<Message>,
+    boardMessages: Array<Message>,
+    privateConversation: Array<Message>,
+    currentPrivate: string,
     id: number,
     fetchActive: boolean,
     sendActive: boolean
 }
 
 const initialState: MessagesState = {
-    messages: [],
+    boardMessages: [],
+    privateConversation: [],
+    currentPrivate: "",
     id: 0,
     fetchActive: false,
     sendActive: false
@@ -33,19 +38,20 @@ export const setSendState = createAction<boolean>('setSendState')
 
 export const loadStoredMessages = createAsyncThunk<
     Array<Message>,
-    void,
+    void | string,
     { state: RootState }
 >(
     'messages/loadStoredMessages',
     async (arg, thunkApi) => {
         let messages: Array<Message> = []
         let id = 0;
-
         let database_key = thunkApi.getState().security.database
         if (database_key != null) {
             let database = await LocalStorage.getStorage(database_key)
-            messages = await database.getMessages(null);
-            //todo get last message id and last sent message id
+            if (arg)
+                messages = await database.getMessages(arg);
+            else
+                messages = await database.getMessages(null);
         }
         return messages
     }
@@ -53,27 +59,27 @@ export const loadStoredMessages = createAsyncThunk<
 
 export const sendMessage = createAsyncThunk<
     number,
-    { text: string, destKeys: Array<string> },
+    { text: string, dest: string, destKeys: Array<string> },
     { state: RootState }
 >(
     'messages/sendMessage',
-    async (message: { text: string, destKeys: Array<string> }, thunkApi) => {
+    async (message: { text: string, dest: string, destKeys: Array<string> }, thunkApi) => {
         thunkApi.dispatch(setSendState(true))
         await thunkApi.dispatch(fetchMessages())
-        
+
         const keys = thunkApi.getState().security.rsa;
         let id = -1;
 
         let database_key = thunkApi.getState().security.database
         if (database_key != null) {
-            
+
             for (let destKey of message.destKeys) {
-                let encryptedMessage = await generateEncryptedMessage(destKey, keys, message.text);
+                let encryptedMessage = await generateEncryptedMessage(destKey, keys, message.text, message.dest);
                 id = await postMessage(encryptedMessage);
             }
             if (id != -1) {
                 let database = await LocalStorage.getStorage(database_key)
-                await database.saveMessage(id, "", "self", true, message.text)
+                await database.saveMessage(id, "", message.dest, "self", true, message.text)
             }
         }
         thunkApi.dispatch(setSendState(false))
@@ -123,14 +129,14 @@ export const fetchMessages = createAsyncThunk<
 
                     let decryptedMsg = await decryptMessage(item, private_key)
 
-                    if (decryptedMsg != null && decryptedMsg.message != null) {
+                    if (decryptedMsg != null && decryptedMsg.message != null && decryptedMsg.dest != null) {
                         let source = decryptedMsg.source
                         if (source == null) source = "unknown"
                         //todo validate message (check if signed correctly)
                         //if not set source to unknown
-                        await database.saveMessage(decryptedMsg.id, "", source, false, decryptedMsg.message)
-                        for(let friend of friends){
-                            if(friend.pubKey == decryptedMsg.source){
+                        await database.saveMessage(decryptedMsg.id, "", decryptedMsg.dest, source, false, decryptedMsg.message)
+                        for (let friend of friends) {
+                            if (friend.pubKey == decryptedMsg.source) {
                                 decryptedMsg.source = friend.nickname
                                 break;
                             }
@@ -156,19 +162,30 @@ export const MessageStoreSlice = createSlice({
         builder
             .addCase(fetchMessages.fulfilled, (state, action) => {
                 action.payload.messages.forEach((message) => {
-                    state.messages.push(message);
+                    if (message.dest == 'board' || message.dest == undefined)
+                        state.boardMessages.push(message);
+                    else if (message.dest == state.currentPrivate)
+                        state.privateConversation.push(message);
                 });
                 if (action.payload.maxid > state.id)
                     state.id = action.payload.maxid;
+
             })
             .addCase(deleteMessages.fulfilled, (state, action) => {
-                state.messages = state.messages.filter((msg) => {
+                state.boardMessages = state.boardMessages.filter((msg) => {
                     action.meta.arg.some((id) => { msg.id == id })
                 })
             })
             .addCase(loadStoredMessages.fulfilled, (state, action) => {
+                if (action.meta.arg) {
+                    state.privateConversation = []
+                    state.currentPrivate = action.meta.arg
+                }
                 action.payload.forEach((message) => {
-                    state.messages.push(message)
+                    if (action.meta.arg)
+                        state.privateConversation.push(message)
+                    else
+                        state.boardMessages.push(message)
                     if (+message.id > state.id)
                         state.id = (+message.id)
                 });
@@ -177,20 +194,37 @@ export const MessageStoreSlice = createSlice({
             .addCase(sendMessage.fulfilled, (state, action) => {
                 console.log("fullfiled ", action.payload)
                 if (action.payload != -1) {
-                    state.messages.push({
-                        id: action.payload,
-                        data: null,
-                        message: action.meta.arg.text,
-                        timestamp: null,
-                        source: 'You',
-                        self: true
-                    });
-                    state.id = action.payload;
+                    if (action.meta.arg.dest == 'board')
+                        state.boardMessages.push({
+                            id: action.payload,
+                            data: null,
+                            message: action.meta.arg.text,
+                            timestamp: null,
+                            dest: 'board',
+                            source: 'You',
+                            self: true
+                        });
+                    else {
+                        state.privateConversation.push({
+                            id: action.payload,
+                            data: null,
+                            message: action.meta.arg.text,
+                            timestamp: null,
+                            dest: action.meta.arg.dest,
+                            source: 'You',
+                            self: true
+                        });
+                    }
+                    state.id = action.payload
                 }
             })
             .addCase(resetMessages, (state, action) => {
-                state.messages = [];
+                state.boardMessages = [];
+                state.privateConversation = [];
+                state.currentPrivate = "";
                 state.id = 0;
+                state.fetchActive = false;
+                state.sendActive = false;
             })
             .addCase(setFetchState, (state, action) => {
                 state.fetchActive = action.payload;

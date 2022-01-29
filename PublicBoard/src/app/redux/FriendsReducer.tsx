@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { createAction, createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import LocalStorage from '../utils/LocalStoreage';
 import { RootState } from './Store';
 
@@ -16,10 +16,12 @@ const initialState: FriendsState = {
     Friends: [],
 }
 
+export const resetFriends = createAction<void>('resetFriends')
+
 export const loadFriends = createAsyncThunk<
-Array<Friend>,
-void,
-{ state: RootState }
+    Array<Friend>,
+    void,
+    { state: RootState }
 >(
     'friends/loadFriends',
     async (arg, thunkApi) => {
@@ -62,20 +64,24 @@ export const FriendsStoreSlice = createSlice({
     initialState: initialState,
     reducers: {},
     extraReducers: (builder) => {
-        builder.addCase(loadFriends.fulfilled, (state, action) => {
-            action.payload.forEach(
-                (friend) => state.Friends.push(friend)
-            );
-        })
-        builder.addCase(addFriend.fulfilled, (state, action) => {
-            state.Friends.push(action.meta.arg);
-            state.Friends.sort((a: Friend, b: Friend) => {
-                return a.nickname.localeCompare(b.nickname);
+        builder
+            .addCase(loadFriends.fulfilled, (state, action) => {
+                action.payload.forEach(
+                    (friend) => state.Friends.push(friend)
+                );
             })
-        })
-        builder.addCase(deleteFirend.fulfilled, (state, action) => {
-            state.Friends = state.Friends.filter((friend) => { friend.pubKey != action.meta.arg })
-        })
+            .addCase(addFriend.fulfilled, (state, action) => {
+                state.Friends.push(action.meta.arg);
+                state.Friends.sort((a: Friend, b: Friend) => {
+                    return a.nickname.localeCompare(b.nickname);
+                })
+            })
+            .addCase(deleteFirend.fulfilled, (state, action) => {
+                state.Friends = state.Friends.filter((friend) => { friend.pubKey != action.meta.arg })
+            })
+            .addCase(resetFriends, (state, action) => {
+                state.Friends = []
+            })
     }
 });
 
