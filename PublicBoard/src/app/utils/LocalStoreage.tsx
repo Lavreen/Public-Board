@@ -18,7 +18,7 @@ export default class LocalStorage {
                         CREATE TABLE IF NOT EXISTS friends(
                             pubKey      TEXT NOT NULL PRIMARY KEY,
                             nickname        TEXT NOT NULL,
-                            id          INTEGER AUTO_INCREMENT
+                            id          INTEGER
                         );
                         `
                     );
@@ -68,6 +68,7 @@ export default class LocalStorage {
 
     }
 
+
     async saveMessage(id: number, timestamp: string, dest: string, source: string, self: boolean, message: string) {
         await this._db?.transaction(
             async (tx) => {
@@ -79,15 +80,54 @@ export default class LocalStorage {
         )
     }
 
+    async checkPubKey(pubKey: string) {
+        return new Promise<number>(async (resolve, reject) => {
+            let ifExists: number
+            await this._db?.transaction(
+                async (tx) => {
+                    tx.executeSql(
+                        'SELECT COUNT(*) as IfExists FROM friends WHERE pubKey = ?;',
+                        [pubKey],
+                        (tx, results) => {
+                            resolve(results.rows.item(0).IfExists)
+                        },
+                        (error) => {
+                            console.log("Database pubKey select error", error);
+                            reject(error)
+                        }
+                    )
+                }   
+            )
+            
+        })
+    }
+    
+
     async saveFriend(pubKey: string, name: string) {
-        await this._db?.transaction(
+        return new Promise<number>(async (resolve, reject) => {
+         let lastId: number
+         await this._db?.transaction(
             async (tx) => {
-                await tx.executeSql(
-                    'INSERT INTO friends (pubKey, nickname) VALUES (?,?);',
-                    [pubKey, name]
-                );
+                
+                tx.executeSql(
+                    'SELECT id FROM friends ORDER BY id DESC LIMIT 1;',
+                    [],
+                    (tx, results) => {
+                        lastId = results.rows.item(0).id+1
+                        tx.executeSql(
+                            'INSERT INTO friends (id, pubKey, nickname) VALUES (?, ?,?);',
+                            [lastId, pubKey, name],
+                        );
+                        resolve(lastId)
+                    },
+                    (error) => {
+                        console.log("Database id select error", error);
+                        reject(error)
+                    }
+                ) 
             }
         )
+        })
     }
 
     getMessages(dest: string | null) {
@@ -95,12 +135,14 @@ export default class LocalStorage {
             this._db?.transaction((tx) => {
                 if (dest == null) {
                     tx.executeSql(
+
                         `
                         SELECT messages.id, timestamp, nickname, self, message 
                         FROM messages INNER JOIN friends ON messages.source=friends.pubkey
                         ORDER BY messages.id INC;
                         `,
                         [dest],
+
                         (tx, results) => {
                             let messages: Array<Message> = [];
                             for (let i = 0; i < results.rows.length; i++) {
@@ -110,6 +152,7 @@ export default class LocalStorage {
                                     id: item.id,
                                     data: null,
                                     timestamp: item.timestamp,
+
                                     dest: 'board',
                                     source: item.nickname,
                                     message: item.message,
@@ -141,6 +184,7 @@ export default class LocalStorage {
                                     data: null,
                                     timestamp: item.timestamp,
                                     source: item.source,
+
                                     dest: dest,
                                     message: item.message,
                                     self: item.self

@@ -12,6 +12,7 @@ const BoardScreen: FC = () => {
     const [messageText, setMessageText] = useState<string>("")
     const [showUndecrypted, setShowUndecrypted] = useState<boolean>(false);
 
+
     const messages = useSelector((state: RootState) => state.message.boardMessages);
     const friends = useSelector((state: RootState) => state.friends.Friends);
     const loading = useSelector((state: RootState) => state.message.fetchActive);
@@ -67,7 +68,6 @@ const BoardScreen: FC = () => {
             }
         }
     }
-
 
     return (
         <PaperProvider theme={theme}>

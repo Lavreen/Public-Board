@@ -27,14 +27,16 @@ export async function generateEncryptedMessage(dest_key: string, your_key: KeyPa
     let aes_iv = await AES.randomKey(16);
     let aes_key = await AES.randomKey(16);
     let aes_key_encrypted = await RSA.encrypt(aes_iv + aes_key, dest_key);
+
     let data : RawMessage = {sign: null, pub_key: null, text: text, dest: dest};
+
     if(your_key != null){
         data.pub_key = your_key.public;
         let hash = await AES.sha256(text);
         data.sign = await RSA.sign(hash, your_key.private);
     }
     let encrypted_data = await AES.encrypt(JSON.stringify(data), aes_key, aes_iv, 'aes-128-cbc')
-    
+
     let message: EncryptedMessage = {
         id: 0,
         key: aes_key_encrypted,
@@ -56,6 +58,7 @@ export async function decryptMessage(message: EncryptedMessage, private_key: str
             id: message.id,
             data: message.data,
             timestamp: "",
+
             dest: decrypted_data.dest,
             source: decrypted_data.pub_key,
             message: decrypted_data.text,

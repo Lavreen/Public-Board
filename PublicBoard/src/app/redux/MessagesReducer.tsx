@@ -45,6 +45,7 @@ export const loadStoredMessages = createAsyncThunk<
     async (arg, thunkApi) => {
         let messages: Array<Message> = []
         let id = 0;
+
         let database_key = thunkApi.getState().security.database
         if (database_key != null) {
             let database = await LocalStorage.getStorage(database_key)
@@ -59,6 +60,7 @@ export const loadStoredMessages = createAsyncThunk<
 
 export const sendMessage = createAsyncThunk<
     number,
+
     { text: string, dest: string, destKeys: Array<string> },
     { state: RootState }
 >(
@@ -75,11 +77,14 @@ export const sendMessage = createAsyncThunk<
 
             for (let destKey of message.destKeys) {
                 let encryptedMessage = await generateEncryptedMessage(destKey, keys, message.text, message.dest);
+
                 id = await postMessage(encryptedMessage);
             }
             if (id != -1) {
                 let database = await LocalStorage.getStorage(database_key)
+
                 await database.saveMessage(id, "", message.dest, "self", true, message.text)
+
             }
         }
         thunkApi.dispatch(setSendState(false))
@@ -129,14 +134,18 @@ export const fetchMessages = createAsyncThunk<
 
                     let decryptedMsg = await decryptMessage(item, private_key)
 
+
                     if (decryptedMsg != null && decryptedMsg.message != null && decryptedMsg.dest != null) {
+
                         let source = decryptedMsg.source
                         if (source == null) source = "unknown"
                         //todo validate message (check if signed correctly)
                         //if not set source to unknown
+
                         await database.saveMessage(decryptedMsg.id, "", decryptedMsg.dest, source, false, decryptedMsg.message)
                         for (let friend of friends) {
                             if (friend.pubKey == decryptedMsg.source) {
+
                                 decryptedMsg.source = friend.nickname
                                 break;
                             }
@@ -162,6 +171,7 @@ export const MessageStoreSlice = createSlice({
         builder
             .addCase(fetchMessages.fulfilled, (state, action) => {
                 action.payload.messages.forEach((message) => {
+
                     if (message.dest == 'board' || message.dest == undefined)
                         state.boardMessages.push(message);
                     else if (message.dest == state.currentPrivate)
@@ -177,6 +187,7 @@ export const MessageStoreSlice = createSlice({
                 })
             })
             .addCase(loadStoredMessages.fulfilled, (state, action) => {
+
                 if (action.meta.arg) {
                     state.privateConversation = []
                     state.currentPrivate = action.meta.arg
@@ -186,6 +197,7 @@ export const MessageStoreSlice = createSlice({
                         state.privateConversation.push(message)
                     else
                         state.boardMessages.push(message)
+
                     if (+message.id > state.id)
                         state.id = (+message.id)
                 });
@@ -194,6 +206,7 @@ export const MessageStoreSlice = createSlice({
             .addCase(sendMessage.fulfilled, (state, action) => {
                 console.log("fullfiled ", action.payload)
                 if (action.payload != -1) {
+
                     if (action.meta.arg.dest == 'board')
                         state.boardMessages.push({
                             id: action.payload,
@@ -216,6 +229,7 @@ export const MessageStoreSlice = createSlice({
                         });
                     }
                     state.id = action.payload
+
                 }
             })
             .addCase(resetMessages, (state, action) => {
@@ -225,6 +239,12 @@ export const MessageStoreSlice = createSlice({
                 state.id = 0;
                 state.fetchActive = false;
                 state.sendActive = false;
+            })
+            .addCase(setFetchState, (state, action) => {
+                state.fetchActive = action.payload;
+            })
+            .addCase(setSendState, (state, action) => {
+                state.sendActive = action.payload;
             })
             .addCase(setFetchState, (state, action) => {
                 state.fetchActive = action.payload;
