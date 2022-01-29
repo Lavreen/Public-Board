@@ -12,7 +12,8 @@ const BoardScreen: FC = () => {
     const [messageText, setMessageText] = useState<string>("")
     const [showUndecrypted, setShowUndecrypted] = useState<boolean>(false);
 
-    const messages = useSelector((state: RootState) => state.message.messages);
+
+    const messages = useSelector((state: RootState) => state.message.boardMessages);
     const friends = useSelector((state: RootState) => state.friends.Friends);
     const loading = useSelector((state: RootState) => state.message.fetchActive);
     const inputLocked = useSelector((state: RootState) => state.message.sendActive);
@@ -26,7 +27,7 @@ const BoardScreen: FC = () => {
         });
         if(keys.length > 0){
             //todo set dispatch type to avoid then error
-            dispatch(sendMessage({ text: messageText, destKeys: keys})).then(()=>{
+            dispatch(sendMessage({ text: messageText, destKeys: keys, dest: 'board'})).then(()=>{
                 setMessageText("");
             });
         }
@@ -67,7 +68,6 @@ const BoardScreen: FC = () => {
             }
         }
     }
-
 
     return (
         <PaperProvider theme={theme}>

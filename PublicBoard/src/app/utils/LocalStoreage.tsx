@@ -27,6 +27,7 @@ export default class LocalStorage {
                         CREATE TABLE IF NOT EXISTS messages(
                             id          INTEGER PRIMARY KEY,
                             timestamp   TEXT,
+                            dest        TEXT,
                             source      TEXT,
                             self        INTEGER,
                             message     TEXT,
@@ -67,12 +68,13 @@ export default class LocalStorage {
 
     }
 
-    async saveMessage(id: number, timestamp: string, source: string, self: boolean, message: string) {
+
+    async saveMessage(id: number, timestamp: string, dest: string, source: string, self: boolean, message: string) {
         await this._db?.transaction(
             async (tx) => {
                 await tx.executeSql(
-                    'INSERT INTO messages (id, timestamp, source, self, message) VALUES (?,?,?,?,?);',
-                    [id, timestamp, source, self, message]
+                    'INSERT INTO messages (id, timestamp, dest, source, self, message) VALUES (?,?,?,?,?,?);',
+                    [id, timestamp, dest, source, self, message]
                 );
             }
         )
@@ -128,13 +130,19 @@ export default class LocalStorage {
         })
     }
 
-    getMessages(user: string | null) {
+    getMessages(dest: string | null) {
         return new Promise<Array<Message>>((resolve, reject) => {
             this._db?.transaction((tx) => {
-                if (user == null) {
+                if (dest == null) {
                     tx.executeSql(
-                        'SELECT messages.id, timestamp, nickname, self, message FROM messages INNER JOIN friends ON messages.source=friends.pubkey;',
-                        [],
+
+                        `
+                        SELECT messages.id, timestamp, nickname, self, message 
+                        FROM messages INNER JOIN friends ON messages.source=friends.pubkey
+                        ORDER BY messages.id INC;
+                        `,
+                        [dest],
+
                         (tx, results) => {
                             let messages: Array<Message> = [];
                             for (let i = 0; i < results.rows.length; i++) {
@@ -144,6 +152,8 @@ export default class LocalStorage {
                                     id: item.id,
                                     data: null,
                                     timestamp: item.timestamp,
+
+                                    dest: 'board',
                                     source: item.nickname,
                                     message: item.message,
                                     self: item.self
@@ -158,8 +168,12 @@ export default class LocalStorage {
                     );
                 } else {
                     tx.executeSql(
-                        'SELECT * FROM messages WHERE source = ?;',
-                        [user],
+                        `
+                        SELECT messages.id, timestamp, nickname, self, message 
+                        FROM messages INNER JOIN friends ON messages.source=friends.pubkey
+                        WHERE dest=? ORDER BY messages.id INC;
+                        `,
+                        [dest],
                         (tx, results) => {
                             let messages: Array<Message> = [];
                             for (let i = 0; i < results.rows.length; i++) {
@@ -170,6 +184,8 @@ export default class LocalStorage {
                                     data: null,
                                     timestamp: item.timestamp,
                                     source: item.source,
+
+                                    dest: dest,
                                     message: item.message,
                                     self: item.self
                                 });
