@@ -5,7 +5,14 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../redux/Store';
 
 export default function ProfileScreen() {
-    const publicKey = useSelector((state: RootState) => state.security.rsa?.public);
+    const publicKey = 
+    `-----BEGIN PUBLIC KEY-----
+    MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDn4Ehf/Dz6FKKN8vvAf1bjn7ET
+    02yczy0t24zWBOynfG5lsyi1TLKHq6ZBvSRMFStmPpl8lJ8oSw25D5/O//DpA9AA
+    zWcCrfnI6CFyu2bscvidVZAePLghuoHP+rnoHL8MtKTuIM9CRc7PhOloZCNWg5nm
+    cVV+RvdGfkwtpwgf0QIDAQAB
+    -----END PUBLIC KEY-----`
+    //useSelector((state: RootState) => state.security.rsa?.public);
     const windowWidth = Dimensions.get('window').width;
 
     return (

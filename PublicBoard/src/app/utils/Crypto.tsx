@@ -10,6 +10,7 @@ export type RawMessage = {
     sign: string | null 
     pub_key: string | null, //
     text: string,  //Message contents
+    dest: string   //board or pub_key
 }
 
 
@@ -22,11 +23,11 @@ export type EncryptedMessage = {
 };
   
 
-export async function generateEncryptedMessage(dest_key: string, your_key: KeyPair | null, text: string ): Promise<EncryptedMessage> {
+export async function generateEncryptedMessage(dest_key: string, your_key: KeyPair | null, text: string, dest: string ): Promise<EncryptedMessage> {
     let aes_iv = await AES.randomKey(16);
     let aes_key = await AES.randomKey(16);
     let aes_key_encrypted = await RSA.encrypt(aes_iv + aes_key, dest_key);
-    let data : RawMessage = {sign: null, pub_key: null, text: text};
+    let data : RawMessage = {sign: null, pub_key: null, text: text, dest: dest};
     if(your_key != null){
         data.pub_key = your_key.public;
         let hash = await AES.sha256(text);
@@ -34,7 +35,6 @@ export async function generateEncryptedMessage(dest_key: string, your_key: KeyPa
     }
     let encrypted_data = await AES.encrypt(JSON.stringify(data), aes_key, aes_iv, 'aes-128-cbc')
     
-    // let decrypted_data = await AES.decrypt(encrypted_data, aes_key, aes_iv, 'aes-128-cbc')
     let message: EncryptedMessage = {
         id: 0,
         key: aes_key_encrypted,
@@ -56,6 +56,7 @@ export async function decryptMessage(message: EncryptedMessage, private_key: str
             id: message.id,
             data: message.data,
             timestamp: "",
+            dest: decrypted_data.dest,
             source: decrypted_data.pub_key,
             message: decrypted_data.text,
             self: false
@@ -67,6 +68,7 @@ export async function decryptMessage(message: EncryptedMessage, private_key: str
             id: message.id,
             data: message.data,
             timestamp: null,
+            dest: 'board',
             source: null,
             message: null,
             self: false
