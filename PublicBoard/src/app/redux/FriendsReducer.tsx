@@ -1,9 +1,10 @@
 import { createAction, createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { act } from 'react-test-renderer';
 import LocalStorage from '../utils/LocalStoreage';
 import { RootState } from './Store';
 
 type Friend = {
-    id: number | null,
+    id: number,
     nickname: string,
     pubKey: string
 }
@@ -60,13 +61,13 @@ string,
 
 export const addFriend = createAsyncThunk<
     number|null,
-    Friend,
+    {pubKey: string, nickname: string},
     { state: RootState }
 >(
     'friends/addFriend',
     async (friend, thunkApi) => {
         let id: number|null = null
-        console.log(friend)
+        //console.log(friend)
         let database_key = thunkApi.getState().security.database
         if (database_key != null) {
             let database = await LocalStorage.getStorage(database_key);
@@ -77,10 +78,33 @@ export const addFriend = createAsyncThunk<
     }
 );
 
-export const deleteFirend = createAsyncThunk(
-    'friends/deleteFirend',
-    async (pubkey: string) => {
-        //todo SQL Lite delete
+export const deleteFriends = createAsyncThunk<
+void,
+Array<number>,
+{ state: RootState }
+>(
+    'friends/deleteFriends',
+    async (friendsToDel, thunkApi) => {
+        let database_key = thunkApi.getState().security.database
+        if (database_key != null) {
+            let database = await LocalStorage.getStorage(database_key);
+            await database.deleteFriends(friendsToDel)
+        }
+    }
+);
+
+export const editFriend = createAsyncThunk<
+void,
+Friend,
+{ state: RootState }
+>(
+    'friends/editFriend',
+    async (friendToEdit, thunkApi) => {
+        let database_key = thunkApi.getState().security.database
+        if (database_key != null) {
+            let database = await LocalStorage.getStorage(database_key);
+            await database.editFriend(friendToEdit)
+        }
     }
 );
 
@@ -96,16 +120,41 @@ export const FriendsStoreSlice = createSlice({
                 );
             })
             .addCase(addFriend.fulfilled, (state, action) => {
-                state.Friends.push(action.meta.arg);
-                state.Friends.sort((a: Friend, b: Friend) => {
-                    return a.nickname.localeCompare(b.nickname);
-                })
+                let id = action.payload
+                if(id != null){
+                    let toAdd: Friend = {
+                        id: id, 
+                        pubKey: action.meta.arg.pubKey,
+                        nickname: action.meta.arg.nickname
+                    }
+                    state.Friends.push(toAdd)
+                    state.Friends.sort((a: Friend, b: Friend) => {
+                        return a.nickname.localeCompare(b.nickname);
+                    })
+                }  
             })
             .addCase(checkPubKey.fulfilled, (state, action) => {
             
             })
-            .addCase(deleteFirend.fulfilled, (state, action) => {
-                state.Friends = state.Friends.filter((friend) => { friend.pubKey != action.meta.arg })
+            .addCase(deleteFriends.fulfilled, (state, action) => {
+                action.meta.arg.forEach(
+                    (id) => state.Friends.splice(state.Friends.findIndex(
+                        (friend) => friend.id == id
+                    ), 1)
+                )
+                state.Friends.sort((a: Friend, b: Friend) => {
+                    return a.nickname.localeCompare(b.nickname);
+                })
+            })
+            .addCase(editFriend.fulfilled, (state, action) => {
+                let id = action.meta.arg.id
+                state.Friends.forEach(function(item, i) { 
+                    if (item.id == id) 
+                        state.Friends[i] = action.meta.arg; }
+                );
+                state.Friends.sort((a: Friend, b: Friend) => {
+                    return a.nickname.localeCompare(b.nickname);
+                })
             })
             .addCase(resetFriends, (state, action) => {
                 state.Friends = []

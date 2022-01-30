@@ -1,4 +1,4 @@
-import React, { FC, useState } from 'react';
+import React, { FC, useEffect, useState } from 'react';
 import {
   SafeAreaView,
   StyleSheet,
@@ -6,13 +6,15 @@ import {
   View,
 } from 'react-native';
 
-import {addFriend, checkPubKey, Friend} from "../redux/FriendsReducer"
-import { useNavigation } from '@react-navigation/native';
+import { addFriend, checkPubKey, editFriend } from "../redux/FriendsReducer"
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { useDispatch } from 'react-redux';
 import QRCodeScanner from 'react-native-qrcode-scanner';
 import { RNCamera } from 'react-native-camera';
-import { Button, TextInput } from 'react-native-paper';
+import { Button, IconButton, TextInput } from 'react-native-paper';
 import { unwrapResult } from '@reduxjs/toolkit'
+import type { FriendsNavigationParams } from './FriendsScreen'
+import QRCode from 'react-native-qrcode-svg';
 
 interface Props {
     placeholder: string;
@@ -27,40 +29,44 @@ interface Props {
 }
 
 interface CamProps {
-  camStyle: any,
-  myFunction: (arg: string) => void
-  setCamera: (arg: boolean) => void
-  validator: (arg: string) => boolean
+  setKeyFunc: (arg: string) => void
+  keyValidator: (arg: string) => boolean
+  setCam: (arg:boolean) => void
 }
 
 const ScannerScreen: FC<{props:CamProps}> = ({props}) =>{
 
-  return (
-    <QRCodeScanner cameraStyle={[props.camStyle, {height: "70%", flex: 0.7}]}
-      onRead={(e) => {
-        if(props.validator(e.data)){
-          props.myFunction(e.data); props.setCamera(false)
-        }
-      }}
-      flashMode={RNCamera.Constants.FlashMode.off}
-      ratio={"4:3"}
-      reactivate={true}
-    />
-  );
-
+    return (
+      <QRCodeScanner cameraStyle={styles.camStyle}
+        onRead={(e) => {
+          if(props.keyValidator(e.data)){
+            props.setKeyFunc(e.data); 
+            props.setCam(false);
+          }
+        }}
+        flashMode={RNCamera.Constants.FlashMode.off}
+        ratio={"4:3"}
+        reactivate={true}
+      />
+    );
 }
 
 
 const AddFriendScreen: FC = () => {
 
   const navigation = useNavigation();
+  const route = useRoute<RouteProp<FriendsNavigationParams, 'obj' >>();
   const dispatch = useDispatch();
-  const [nameInput, setNameInput] = useState<string>("")
-  const [pubKeyInput, setPubKeyInput] = useState<string>("")
+  const [nameInput, setNameInput] = 
+    useState<string>(route.params.details == true ? route.params.friend.nickname: "")
+  const [pubKeyInput, setPubKeyInput] = 
+    useState<string>(route.params.details == true ? route.params.friend.pubKey: "")
   const [enableCamera, setEnableCamera] = useState<boolean>(false)
   const [warningText, setWarningText] = useState<string>("")
+  const [editMode, setEditMode] = useState<boolean>(route.params.details == true ? false : true)
 
-  const validatePubKey = (pubKey: string) :boolean=> {
+
+  const validatePubKey = (pubKey: string) :boolean => {
     let re = /-----BEGIN PUBLIC KEY-----(.*)-----END PUBLIC KEY-----/s;
       return re.test(pubKey);
   };
@@ -75,16 +81,39 @@ const AddFriendScreen: FC = () => {
       if(!validatePubKey(pubKeyInput)){
         setWarningText("Bad key input")
         setTimeout(() => setWarningText(""), 3000);
-        return
+        //return
       }
-      
+
+      if(route.params.details == true && 
+        editMode && pubKeyInput == route.params.friend.pubKey){
+       
+        let friendToEdit = {
+          id: route.params.friend.id,
+          nickname: nameInput,
+          pubKey: pubKeyInput,
+        }
+        dispatch(editFriend(friendToEdit))
+        navigation.goBack();
+        return   
+      }
+
       await dispatch(checkPubKey(pubKeyInput))
       .then(unwrapResult)
       .then((ifExists: boolean) => {
         if(!ifExists){
-          let newFriend: Friend = {id: null, nickname: nameInput, pubKey: pubKeyInput};
-          dispatch(addFriend(newFriend))
-          navigation.goBack();
+          if(route.params.details == true){
+            let friendToEdit = {
+              id: route.params.friend.id,
+              nickname: nameInput,
+              pubKey: pubKeyInput,
+            }
+           
+            dispatch(editFriend(friendToEdit))
+            navigation.goBack();
+          } else {
+            dispatch(addFriend({nickname: nameInput, pubKey: pubKeyInput}))
+            navigation.goBack();
+          } 
         } else {
           setWarningText("This pubKey already exists")
           setTimeout(() => setWarningText(""), 3000);
@@ -97,69 +126,86 @@ const AddFriendScreen: FC = () => {
   };
 
   let scannerProps : CamProps = {
-    camStyle: styles.qr_view,
-    myFunction: (arg) => {setPubKeyInput(arg)},
-    setCamera: (arg) => {setEnableCamera(arg)},
-    validator: (arg: string) => validatePubKey(arg)
+    setKeyFunc: (arg) => setPubKeyInput(arg),
+    keyValidator: (arg: string) => validatePubKey(arg),
+    setCam: setEnableCamera,
   }
 
   return (
     
     <SafeAreaView style={styles.container} >
      
-      <View>
-        <Input 
-          placeholder='FriendName'
+      <View style={styles.topInput}>
+        <TextInput 
+          placeholder='Friend Name'
           value={nameInput}
           onChangeText={(text) => setNameInput(text)}
+          editable={editMode == true ? true : false}
         />
-        <Input
+        <TextInput
           value={pubKeyInput}
-          placeholder='pubKey'
+          placeholder='Public Key'
           onChangeText={(text) => setPubKeyInput(text)} 
+          editable={editMode == true ? true : false}
         />
       </View>
 
       <Text
           style={
               {
-                color: "red", fontSize: 15, backgroundColor: "white"
+                color: "red", fontSize: 15, backgroundColor: "white", 
+                alignSelf: "center", marginTop: 3,
               }
             }>
             {warningText}
       </Text>
       
-      <View style={{display: enableCamera == false ? "none" : "flex"}}>
-        <View style={styles.camerOverlay}></View>
-            <ScannerScreen props={scannerProps}/>
-      </View>
+      <IconButton 
+        icon="lead-pencil" size={30}
+        style={
+          {
+            display: route.params.details == true ? "flex" : "none",
+            alignSelf: "flex-end",
+            backgroundColor: "pink"
+          }
+        }
+        onPress={() => {
+          setEditMode(!editMode);
+          setEnableCamera(editMode);
+        }}
+      />
 
-      <View style={{display: enableCamera == true ? "none" : "flex", margin: 10}}>
-            <Button mode="contained" onPress={() => setEnableCamera(true)}>
-                Show Cam
-            </Button>
-      </View>
-     
-      
+      {editMode == true ? 
+        <IconButton 
+          icon="qrcode" size={300}
+          style={
+            {
+              display: enableCamera == true ? "none" : "flex",
+              alignSelf: "center"
+            }
+          }
+          onPress={() => setEnableCamera(true)}
+        />
+        : route.params.details == true ? 
+        <View style={styles.qrGenerated}>
+           <QRCode
+            size={400}
+            value={route.params.friend.pubKey}
+          /> 
+        </View>
+        : null
+      }
 
-      <View style={styles.button_container}>
-        <Button mode="contained" onPress={handleAdd}>
-          Add
+      {enableCamera == true && editMode == true? <ScannerScreen props={scannerProps}/> : null}
+
+      {route.params.details == true && editMode == false ? 
+        null :
+        <Button style={styles.addButton} mode="contained" onPress={handleAdd}>
+           Save
         </Button>
-      </View>
+      }
     </SafeAreaView>
   );
-};
-
-const Input: FC<Props> = (props) => {
-    return (
-      <TextInput 
-        value={props.value}
-        placeholderTextColor="#555"
-        placeholder={props.placeholder}
-        onChangeText={props.onChangeText}
-      />
-    );
 };
 
 
@@ -168,29 +214,23 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     flex: 1,
   },
-  button_container: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    margin: 10
+  topInput: {
+    paddingHorizontal: 10,
+    paddingTop: 5
   },
-  buttonText: {
-    color: "white",
-    fontWeight: "600",
+  addButton: {
+    marginBottom: 10,
+    marginTop: "auto",
+    minWidth: "50%",
+    alignSelf: "center"
   },
-  camerOverlay: {
-    zIndex: 2,
-    position:"absolute",
-    width: "100%",
-    minHeight: 30,
-    backgroundColor: "white",
-    left: 0,
-    top: 0,
+  camStyle: {
+    maxWidth: "60%",
+    alignSelf: "center"
   },
-  qr_view: {
-    zIndex: -50,
-    flex: 1,
-    alignSelf: "center",
-  }, 
+  qrGenerated: {
+    alignSelf: "center"
+  }
 });
 
 

@@ -37,12 +37,12 @@ export default class LocalStorage {
                     );
                     await tx.executeSql(
                         `
-                        INSERT INTO friends (pubKey, nickname) VALUES ("unknown", "Unknown Source");                        
+                        INSERT INTO friends (id, pubKey, nickname) VALUES (1, "unknown", "Unknown Source");                        
                         `
                     );
                     await tx.executeSql(
                         `
-                        INSERT INTO friends (pubKey, nickname) VALUES ("self", "You");
+                        INSERT INTO friends (id, pubKey, nickname) VALUES (2, "self", "You");
                         `
                     )
                 })
@@ -81,7 +81,6 @@ export default class LocalStorage {
 
     async checkPubKey(pubKey: string) {
         return new Promise<number>(async (resolve, reject) => {
-            let ifExists: number
             await this._db?.transaction(
                 async (tx) => {
                     tx.executeSql(
@@ -128,6 +127,34 @@ export default class LocalStorage {
         )
         })
     }
+
+    async deleteFriends(friendsToDel: Array<number>) {
+         await this._db?.transaction(
+            async (tx) => {
+                
+                friendsToDel.forEach(
+                    (id) => {
+                        tx.executeSql(
+                            'DELETE FROM friends WHERE id = ?;',
+                            [id],
+                        ); 
+                    }
+                )
+            }
+        )
+    }
+
+    async editFriend(friend: Friend) {
+        await this._db?.transaction(
+           async (tx) => {
+               
+               tx.executeSql(
+                   'UPDATE friends SET nickname = ?, pubKey = ? WHERE id = ?;',
+                   [friend.nickname, friend.pubKey, friend.id],
+               ); 
+           }
+       )
+   }
 
     getMessages(dest: string | null) {
         return new Promise<Array<Message>>((resolve, reject) => {
@@ -202,7 +229,7 @@ export default class LocalStorage {
         return new Promise<Array<Friend>>((resolve, reject) => {
             this._db?.transaction((tx) => {
                 tx.executeSql(
-                    'SELECT * FROM friends WHERE length(pubkey)>10 ORDER BY LENGTH(nickname), nickname ASC;',
+                    'SELECT * FROM friends WHERE id > 2 ORDER BY nickname ASC;',
                     [],
                     (tx, results) => {
                         let friends: Array<Friend> = [];
