@@ -9,32 +9,37 @@ import {
 } from 'react-native';
 
 import { useNavigation } from '@react-navigation/native';
-import { Friend } from "../redux/FriendsReducer"
+import { deleteFriends, Friend } from "../redux/FriendsReducer"
 import { RootState } from '../redux/Store';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { List, IconButton, Searchbar } from 'react-native-paper';
 
+export type FriendsNavigationParams = {
+  obj: {
+    details: boolean,
+    friend: Friend
+  };
+};
 
 const FriendsScreen: FC = () => {
 
+  const dispatch = useDispatch();
   const navigation = useNavigation();
   const friends = useSelector((state: RootState) => state.friends.Friends)
   const [searchInput, setsearchInput] = useState<string>("")
   const [selectionMode, setSelectionMode] = useState<boolean>()
-  const [selectedFriends, setSelectedFriends] = useState<Array<number | null>>([])
+  const [selectedFriends, setSelectedFriends] = useState<Array<number>>([])
 
-  function manageSelected(id: number | null): boolean {
+  function manageSelected(id: number): boolean {
 
     let idx = selectedFriends.indexOf(id)
 
     if(idx == -1){
       selectedFriends.push(id)
-      setSelectedFriends(selectedFriends)
       setSelectionMode(true)
       return true
     } else {
       selectedFriends.splice(idx, 1)
-      setSelectedFriends(selectedFriends)
       if(selectedFriends.length == 0)
         setSelectionMode(false)
       
@@ -55,6 +60,10 @@ const FriendsScreen: FC = () => {
       <IconButton
         icon="delete" size={35}
         style={{ marginRight: 0, marginLeft: "auto", display: selectionMode == true ? "flex" : "none" }}
+        onPress={() => {
+          setSelectionMode(false);
+          dispatch(deleteFriends(selectedFriends));
+        }}
       />
 
       <FlatList
@@ -64,7 +73,8 @@ const FriendsScreen: FC = () => {
             return (
               <FriendItem
                 friend={{ id: item.id, nickname: item.nickname, pubKey: item.pubKey }}
-                myFunc={manageSelected}
+                selectFriend={manageSelected}
+                navigation={navigation}
               />
             )
           } else {
@@ -86,7 +96,7 @@ const FriendsScreen: FC = () => {
             }
           ]
         }
-        onPress={() => navigation.navigate("AddFriend")}
+        onPress={() => navigation.navigate("AddFriend", {details: false, friend: null})}
       />
 
     </SafeAreaView>
@@ -107,19 +117,26 @@ function getRandomColor(arg: String) {
     + String((140 + valueToAdd) % 256) + ',' + '0.6' + ')';
 }
 
-const IconWithName: FC<{ nickname: String, selectedForIcon: boolean }> = (props) => {
+const IconWithName: FC<{ 
+  friendId: number
+  nickname: String,
+  isSelected: boolean,
+  setIsSelected: React.Dispatch<React.SetStateAction<boolean>>
+  selectFriend: (id: number) => boolean 
+}> = (props) => {
 
   return (
     <TouchableOpacity
       style={[
         styles.roundButton, 
         { 
-          backgroundColor: props.selectedForIcon == false 
+          backgroundColor: props.isSelected == false 
             ? getRandomColor(props.nickname) : "rgb(54,35,113)"
         }
       ]}
+      onPress={ () => {props.setIsSelected(props.selectFriend(props.friendId))} }
     >
-    {props.selectedForIcon == false ?
+    {props.isSelected == false ?
       <RNText style={{ fontSize: 30, color: "white" }}>{props.nickname.charAt(0)}</RNText>
       : <IconButton icon="check" size={30} color="white"/>}
     </TouchableOpacity>
@@ -127,28 +144,41 @@ const IconWithName: FC<{ nickname: String, selectedForIcon: boolean }> = (props)
 }
 
 
-const FriendItem: FC<{ friend: Friend, myFunc: (id: number | null) => boolean }> = (props) => {
+const FriendItem: FC<{ 
+  friend: Friend, 
+  selectFriend: (id: number) => boolean 
+  navigation: any
+}> = (props) => {
 
   const [isSelected, setIsSelected] = useState<boolean>(false)
 
   return (
-    <View style={{paddingHorizontal:5, paddingVertical:2}}>
+    <View style={{
+      paddingHorizontal:5, 
+      paddingVertical:2,
+    }}>
     <List.Item
       title={props.friend.nickname}
-      onPress={() => { }}
+      onPress={() => {props.navigation.navigate("AddFriend", {details: true, friend: props.friend}) }}
       description={props.friend.pubKey}
       onLongPress={() => {
-        setIsSelected(props.myFunc(props.friend.id))
+        setIsSelected(props.selectFriend(props.friend.id))
       }
       }
       left={() =>
-        <IconWithName nickname={
-          props.friend.nickname.concat(props.friend.pubKey.charAt(0))
-        } selectedForIcon={isSelected}>
-        </IconWithName>
+        <IconWithName 
+          friendId={props.friend.id}
+          nickname={props.friend.nickname.concat(props.friend.pubKey.charAt(0))} 
+          isSelected={isSelected}
+          setIsSelected={setIsSelected}
+          selectFriend={props.selectFriend}
+        />
       }
       style={{
         backgroundColor: isSelected==false ? "white" : "rgb(154, 154, 156)", 
+        borderRadius: 10,
+        borderBottomColor: "gray",
+        borderBottomWidth: 0.2
       }}
     />
     </View>
