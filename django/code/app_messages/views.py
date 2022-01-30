@@ -87,14 +87,7 @@ class MessageViewModel(viewsets.ModelViewSet):
 
         # request.POST['message_text'],
 
-        if request.POST['pub_date']:
-            message = Message.objects.create(
-                data=request.POST['data'],
-                pub_date=request.POST['pub_date'],
-                key=request.POST['key'],
-            )
-        else:
-            message = Message.objects.create(
+        message = Message.objects.create(
                 data=request.POST['data'],
                 pub_date=str(datetime.date(datetime.today())),
                 key=request.POST['key'],
