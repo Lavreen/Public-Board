@@ -67,7 +67,7 @@ const AddFriendScreen: FC = () => {
 
 
   const validatePubKey = (pubKey: string) :boolean => {
-    let re = /-----BEGIN PUBLIC KEY-----(.*)-----END PUBLIC KEY-----/s;
+    let re = /-----BEGIN RSA PUBLIC KEY-----(.*)-----END RSA PUBLIC KEY-----/s;
       return re.test(pubKey);
   };
 
@@ -84,8 +84,7 @@ const AddFriendScreen: FC = () => {
         //return
       }
 
-      if(route.params.details == true && 
-        editMode && pubKeyInput == route.params.friend.pubKey){
+      if(route.params.details == true && pubKeyInput == route.params.friend.pubKey){
        
         let friendToEdit = {
           id: route.params.friend.id,
@@ -160,11 +159,12 @@ const AddFriendScreen: FC = () => {
             {warningText}
       </Text>
       
+
+      {route.params.details == true ?
       <IconButton 
         icon="lead-pencil" size={30}
         style={
           {
-            display: route.params.details == true ? "flex" : "none",
             alignSelf: "flex-end",
             backgroundColor: "pink"
           }
@@ -173,7 +173,7 @@ const AddFriendScreen: FC = () => {
           setEditMode(!editMode);
           setEnableCamera(editMode);
         }}
-      />
+      />: null}
 
       {editMode == true ? 
         <IconButton 
