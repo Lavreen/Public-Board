@@ -20,12 +20,14 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'fil_!$_oqn%!1_me4&twwcr%(js0($xuju8bsk4!u77i@bjj10'
+SECRET_KEY = os.getenv('SECRET_KEY', 'beachcafe')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('ENVIRONMENT', 'development') == 'development'
 
-ALLOWED_HOSTS = []
+CSRF_TRUSTED_ORIGINS = ['https://publicboard.herokuapp.com']
+
+ALLOWED_HOSTS = ['publicboard.herokuapp.com', '127.0.0.1']
 
 
 # Application definition
@@ -128,3 +130,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "static"),
+]
+
+
