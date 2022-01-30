@@ -39,7 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_extensions',
-    'rest_framework'
+    'rest_framework',
+    'django_crontab',
 ]
 
 MIDDLEWARE = [
@@ -82,6 +83,12 @@ DATABASES = {
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
+
+# Cronjobs
+
+CRONJOBS = [
+    ('*/1 * * * *', 'app_messages.cron.delete_expired')
+]
 
 
 # Password validation

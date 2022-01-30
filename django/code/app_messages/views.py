@@ -86,10 +86,18 @@ class MessageViewModel(viewsets.ModelViewSet):
     def create(self, request):
 
         # request.POST['message_text'],
-        message = Message.objects.create(
-            data=request.POST['data'],
-            pub_date=str(datetime.date(datetime.today())),
-            key=request.POST['key'],
-        )
+
+        if request.POST['pub_date']:
+            message = Message.objects.create(
+                data=request.POST['data'],
+                pub_date=request.POST['pub_date'],
+                key=request.POST['key'],
+            )
+        else:
+            message = Message.objects.create(
+                data=request.POST['data'],
+                pub_date=str(datetime.date(datetime.today())),
+                key=request.POST['key'],
+            )
         serializer = MessageSerializer(message)
         return Response({"new_id": serializer.data["id"]}, status=status.HTTP_201_CREATED, )
