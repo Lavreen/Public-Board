@@ -1,17 +1,46 @@
-import React, { Component } from 'react';
-import { View, Text, Button, Image } from 'react-native';
+import React from 'react';
+import { Image, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../redux/Store';
+import { deleteData } from '../redux/SecurityReducer';
+import { Surface, Button, Title } from 'react-native-paper';
+import { styles } from '../assets/paperTheme';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
     const navigation = useNavigation();
+    const dispatch = useDispatch();
+    const publicKey = useSelector((state: RootState) => state.security.rsa?.public);
+
     return (
-        <View>
+
+        <SafeAreaView style={styles.container}>
+            <Surface style={styles.title}>
             <Image source={require('../assets/logo.png')}></Image>
-            <Text>Public Board</Text>
-            <Button title="Messages" onPress={() => navigation.navigate('Messages')} ></Button>
-            <Button title="New message" onPress={() => navigation.navigate('CreateMessage')}></Button>
-            <Button title="Friends" onPress={() => navigation.navigate('Friends')}></Button>
-            <Button title="Board" onPress={() => navigation.navigate('Board')} ></Button>
-        </View >
+            <Title>Public Board</Title>
+            </Surface>
+            <Surface style={styles.surface}>
+                {/* <Button mode="contained" style={styles.homeScreenButton} onPress={() => navigation.navigate('Messages')}>
+                    Messages
+                </Button> */}
+                {/* <Button mode="contained" style={styles.homeScreenButton} onPress={() => navigation.navigate('CreateMessage')}>
+                    New message
+                </Button> */}
+                <Button mode="contained" style={styles.homeScreenButton} onPress={() => navigation.navigate('Board')}>
+                Board
+                </Button>
+                <Button mode="contained" style={styles.homeScreenButton} onPress={() => navigation.navigate('Friends')}>
+                Friends
+                </Button>
+                <Button mode="contained" style={styles.homeScreenButton} onPress={() => navigation.navigate('Profile')}>
+                Profile
+                </Button>
+                <Button mode="contained" style={styles.homeScreenButton} onPress={() => dispatch(deleteData())}>
+                Wipe Data
+                </Button>
+            </Surface>
+        </SafeAreaView>
+     
     );
 }

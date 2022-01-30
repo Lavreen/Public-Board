@@ -1,31 +1,34 @@
 import React from "react";
-import { View, Button } from "react-native";
+import { } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { useGetTodayMessages, useGetLastMessages, useGetMessageById } from "../utils/Api";
+import { getLastMessagesFunc, getTodayMessagesFunc, getMessageByIdFunc, useGetTodayMessages, useGetLastMessages, useGetMessageById, getByURL } from "../utils/Api";
+import { Text, TextInput, Surface, Button, DefaultTheme, Provider as PaperProvider, List, Menu, Title } from 'react-native-paper';
+import { theme } from "../assets/paperTheme";
+import { BaseButton } from "react-native-gesture-handler";
 
 export default function MessagesScreen() {
   const navigation = useNavigation();
-  const { data: { results: dataToday }} = useGetTodayMessages();
-  const { data: { results: dataLast }}  = useGetLastMessages();
-  const { data: dataId } = useGetMessageById("1");
+  // const { data: { results: dataToday }} = useGetTodayMessages();
+  // const { data: { results: dataLast }}  = useGetLastMessages();
+  // const { data: dataId } = useGetMessageById("32");
   return (
-    <View>
+    <PaperProvider theme={theme}>
       <Button
-        title="Go Back"
+        mode="contained"
         onPress={() => navigation.navigate("Home")}
-      ></Button>
+      >Go Back</Button>
       <Button
-        title="Test Today"
-        onPress={async () => console.log(dataToday)}
-      ></Button>
+        mode="contained"
+        onPress={async () => console.log(await getTodayMessagesFunc())}
+      >Test Today</Button>
       <Button
-        title="Test Last"
-        onPress={async () => console.log(dataLast)}
-      ></Button>
+        mode="contained"
+        onPress={async () => console.log(await getLastMessagesFunc())}
+      >Test Last</Button>
       <Button
-        title="Test Id"
-        onPress={async () => console.log(dataId)}
-      ></Button>
-    </View>
+        mode="contained"
+        onPress={async () => console.log(await getMessageByIdFunc(30))}
+      >Test Id</Button>
+    </PaperProvider>
   );
 }

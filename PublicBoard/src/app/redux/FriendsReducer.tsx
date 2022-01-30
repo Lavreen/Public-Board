@@ -1,8 +1,9 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { createAction, createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import LocalStorage from '../utils/LocalStoreage';
+import { RootState } from './Store';
 
-//todo SQL Lite dependency
 type Friend = {
-    id: number,
+    id: number | null,
     nickname: string,
     pubKey: string
 }
@@ -12,30 +13,74 @@ export type FriendsState = {
 }
 
 const initialState: FriendsState = {
-    Friends: []
+    Friends: [],
 }
 
-export const loadFriends = createAsyncThunk(
+export const resetFriends = createAction<void>('resetFriends')
+
+export const loadFriends = createAsyncThunk<
+    Array<Friend>,
+    void,
+    { state: RootState }
+>(
     'friends/loadFriends',
-    async () => {
-        //todo SQL Lite import
+    async (arg, thunkApi) => {
         let friends: Array<Friend> = []
 
+        let database_key = thunkApi.getState().security.database
+        if (database_key != null) {
+            let database = await LocalStorage.getStorage(database_key);
+            friends = await database.getFiends()
+        }
         return friends;
     }
 );
 
-export const addFriend = createAsyncThunk(
-    'friends/addFirend',
-    async (friend: Friend) => {
-        //todo SQL Lite save
+
+export const checkPubKey = createAsyncThunk<
+boolean,
+string,
+{state: RootState}
+>(
+    'friends/checkKey',
+    async (pubKey, thunkApi) => {
+        let ifExists: number = 0
+        let database_key = thunkApi.getState().security.database
+        if (database_key != null) {
+            let database = await LocalStorage.getStorage(database_key);
+            ifExists = await database.checkPubKey(pubKey);  
+        }
+        if(ifExists == 0)
+            return false
+        else
+            return true
+    }
+
+)
+
+export const addFriend = createAsyncThunk<
+    number|null,
+    Friend,
+    { state: RootState }
+>(
+    'friends/addFriend',
+    async (friend, thunkApi) => {
+        let id: number|null = null
+        console.log(friend)
+        let database_key = thunkApi.getState().security.database
+        if (database_key != null) {
+            let database = await LocalStorage.getStorage(database_key);
+            id = await database.saveFriend(friend.pubKey, friend.nickname);  
+        }
+
+       return id;
     }
 );
 
 export const deleteFirend = createAsyncThunk(
     'friends/deleteFirend',
     async (pubkey: string) => {
-        //todo SQL Lite save
+        //todo SQL Lite delete
     }
 );
 
@@ -44,19 +89,29 @@ export const FriendsStoreSlice = createSlice({
     initialState: initialState,
     reducers: {},
     extraReducers: (builder) => {
-        builder.addCase(loadFriends.fulfilled, (state, action) => {
-            action.payload.forEach(
-                (friend)=>state.Friends.push(friend)
-            ); 
-        })
-        builder.addCase(addFriend.fulfilled, (state, action) => {
-            state.Friends.push(action.meta.arg);
-        })
-        builder.addCase(deleteFirend.fulfilled, (state, action) => {
-            state.Friends = state.Friends.filter((friend)=>{friend.pubKey != action.meta.arg})
-        })
+        builder
+            .addCase(loadFriends.fulfilled, (state, action) => {
+                action.payload.forEach(
+                    (friend) => state.Friends.push(friend)
+                );
+            })
+            .addCase(addFriend.fulfilled, (state, action) => {
+                state.Friends.push(action.meta.arg);
+                state.Friends.sort((a: Friend, b: Friend) => {
+                    return a.nickname.localeCompare(b.nickname);
+                })
+            })
+            .addCase(checkPubKey.fulfilled, (state, action) => {
+            
+            })
+            .addCase(deleteFirend.fulfilled, (state, action) => {
+                state.Friends = state.Friends.filter((friend) => { friend.pubKey != action.meta.arg })
+            })
+            .addCase(resetFriends, (state, action) => {
+                state.Friends = []
+            })
     }
 });
 
-export type {Friend};
+export type { Friend };
 export default FriendsStoreSlice.reducer;

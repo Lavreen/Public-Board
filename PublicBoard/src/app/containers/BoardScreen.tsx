@@ -1,107 +1,126 @@
-import React, { useState, FC, useEffect } from 'react';
-import {
-    SafeAreaView,
-    View,
-    Text,
-    StyleSheet,
-    TextInput,
-    Button,
-    TouchableOpacity,
-    FlatList,
-} from 'react-native';
+import React, { useState, FC } from 'react';
+import { FlatList, KeyboardAvoidingView, StyleSheet } from 'react-native';
 
 import { RootState } from '../redux/Store';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchMessages, Message, sendMessage } from '../redux/MessagesReducer';
+import { TextInput, Provider as PaperProvider, Appbar, List, ActivityIndicator } from 'react-native-paper';
+import { theme } from '../assets/paperTheme';
 
 const BoardScreen: FC = () => {
 
     const [messageText, setMessageText] = useState<string>("")
-    const messages = useSelector((state: RootState) => state.message.messages);
+    const [showUndecrypted, setShowUndecrypted] = useState<boolean>(false);
+
+    const messages = useSelector((state: RootState) => state.message.boardMessages);
+    const friends = useSelector((state: RootState) => state.friends.Friends);
+    const loading = useSelector((state: RootState) => state.message.fetchActive);
+    const inputLocked = useSelector((state: RootState) => state.message.sendActive);
     const dispatch = useDispatch();
+
     const submitMessage = () => {
-        dispatch(sendMessage({ text: messageText, to: 'SELF' }));
+        if(messageText == "") return;
+        let keys: Array<string> = []
+        friends.forEach((friend)=>{
+            keys.push(friend.pubKey)
+        });
+        if(keys.length > 0){
+            //todo set dispatch type to avoid then error
+            dispatch(sendMessage({ text: messageText, destKeys: keys, dest: 'board'})).then(()=>{
+                setMessageText("");
+            });
+        }
     }
+
+    const _render_item = (message: Message) => {
+        if (message.message == null) {
+            if (showUndecrypted) {
+                return (
+                    <List.Item
+                        title={"Couldn't decrypt"}
+                        titleStyle={textStylesheet.undecrypted}
+                        descriptionNumberOfLines={1}
+                        description={message.data}
+                        
+                    />
+                );
+            } else
+                return null;
+        } else {
+            if(message.self){
+                return (
+                    <List.Item
+                        title={message.source}
+                        titleStyle={textStylesheet.user}
+                        descriptionNumberOfLines={10}
+                        description={message.message}
+                    />
+                );
+            } else{
+                return (
+                    <List.Item
+                        title={message.source}
+                        descriptionNumberOfLines={10}
+                        description={message.message}
+                    />
+                );
+            }
+        }
+    }
+
     return (
-        <SafeAreaView style={styles.container}>
-            <Button title='fetch messages' onPress={() => dispatch(fetchMessages())}></Button>
+        <PaperProvider theme={theme}>
+            <Appbar.Header>
+                <Appbar.Content
+                    title="Public Board"
+                    subtitle={showUndecrypted ? "All messages" : "Only decrypted messages"}
+                />
+                <Appbar.Action
+                    icon={showUndecrypted ? "book-lock" : "book"}
+                    onPress={() => setShowUndecrypted(!showUndecrypted)}
+                />
+                <Appbar.Action
+                    icon="refresh"
+                    onPress={() => dispatch(fetchMessages())}
+                />
+            </Appbar.Header>
+
             <FlatList
                 data={messages}
-                //temporary cause weird looking animation change to scroll list?
                 inverted={true}
                 contentContainerStyle={{ flexDirection: 'column-reverse' }}
-                renderItem={({ item }) => (<MessageItem {...item} />)}
+                keyExtractor={ (item)=>item.id.toString() }
+                renderItem={(item) => _render_item(item.item)}
             />
-            <View style={styles.creteMessage}>
-                <View style={styles.viewStyle}>
-                    <TextInput
-                        style={styles.textInput}
-                        value={messageText}
-                        placeholderTextColor="#555"
-                        onChangeText={setMessageText}
-                    />
-                </View>
-                <TouchableOpacity style={styles.sendButton} onPress={submitMessage} >
-                    <Text>{">"}</Text>
-                </TouchableOpacity>
-            </View>
-        </SafeAreaView>
+            <ActivityIndicator animating={loading} hidesWhenStopped={true}/>
+            
+            <KeyboardAvoidingView>
+                <TextInput
+                    multiline={true}
+                    label="Message content"
+                    value={messageText}
+                    disabled={inputLocked}
+                    placeholderTextColor="#555"
+                    onChangeText={setMessageText}
+                    right={
+                        <TextInput.Icon
+                            name="send-lock"
+                            onPress={submitMessage}
+                        />
+                    }
+                />
+            </KeyboardAvoidingView>
+        </PaperProvider>
     );
 }
 
-const MessageItem: FC<Message> = (props) => {
-    if (typeof props.id === 'string' && props.id.startsWith('SELF-'))
-        return (
-            <View style={styles.myMessageItem}>
-                <Text>{props.message}</Text>
-                <Text>{props.data}</Text>
-            </View>
-        );
-    else
-        return (
-            <View style={styles.messageItem}>
-                <Text>{props.message}</Text>
-                <Text>{props.data}</Text>
-            </View>
-        );
-}
-
-const styles = StyleSheet.create({
-    container: {
-        backgroundColor: "white",
-        flex: 1,
-        flexDirection: "column",
-    },
-    myMessageItem: {
-        backgroundColor: "#EEEEEE"
-    },
-    messageItem: {
-
-    },
-    creteMessage: {
-        display: "flex",
-        flexDirection: "row",
-    },
-    sendButton: {
-        alignSelf: "center",
-        backgroundColor: "#736699",
-        padding: 10,
-        paddingHorizontal: 20,
-        borderRadius: 6,
-        marginVertical: 10,
-    },
-    viewStyle: {
-        borderBottomColor: "#3d5c5c",
-        borderBottomWidth: 1,
-        backgroundColor: "#e6e6e5",
-        borderRadius: 30,
-        width: "90%",
-    },
-    textInput: {
-        marginLeft: 10,
-        color: "black",
-    },
-
-});
-
 export default BoardScreen
+
+const textStylesheet = StyleSheet.create({
+    undecrypted:{
+        color: 'red'
+    },
+    user:{
+        color: 'green'
+    }
+});

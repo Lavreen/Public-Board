@@ -1,126 +1,237 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { getLastMessages, getMessageById, postMessage } from '../utils/Api';
-import { EncryptedMessage, generateEncryptedMessage } from '../utils/Crypto';
-import { useDispatch, useSelector } from 'react-redux';
+import { createAction, createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { getMessageGtId, postMessage } from '../utils/Api';
+import { generateEncryptedMessage, decryptMessage } from '../utils/Crypto';
 import { RootState } from '../redux/Store';
+import LocalStorage from '../utils/LocalStoreage';
 
 export type Message = {
-    id: string,
+    id: number,
     data: string | null,
     timestamp: string | null
+    dest: string | null,
     source: string | null
     message: string | null
+    self: boolean
 }
 
 export type MessagesState = {
-    messages: Array<Message>,
+    boardMessages: Array<Message>,
+    privateConversation: Array<Message>,
+    currentPrivate: string,
     id: number,
-    selfid: number
+    fetchActive: boolean,
+    sendActive: boolean
 }
 
 const initialState: MessagesState = {
-    messages: [],
+    boardMessages: [],
+    privateConversation: [],
+    currentPrivate: "",
     id: 0,
-    selfid: 0
+    fetchActive: false,
+    sendActive: false
 }
 
-export const loadStoredMessages = createAsyncThunk(
+export const resetMessages = createAction<void>('resetMessages')
+export const setFetchState = createAction<boolean>('setFetchState')
+export const setSendState = createAction<boolean>('setSendState')
+
+export const loadStoredMessages = createAsyncThunk<
+    Array<Message>,
+    void | string,
+    { state: RootState }
+>(
     'messages/loadStoredMessages',
-    async () => {
-        //todo SQL Lite import
+    async (arg, thunkApi) => {
         let messages: Array<Message> = []
-        //todo get last message id and last sent message id
-        let id = 0, selfid = 0;
-        return { messages: messages, id: id, selfid: selfid }
+        let id = 0;
+        let database_key = thunkApi.getState().security.database
+        if (database_key != null) {
+            let database = await LocalStorage.getStorage(database_key)
+            if (arg)
+                messages = await database.getMessages(arg);
+            else
+                messages = await database.getMessages(null);
+        }
+        return messages
     }
 );
 
-export const sendMessage = createAsyncThunk(
+export const sendMessage = createAsyncThunk<
+    number,
+    { text: string, dest: string, destKeys: Array<string> },
+    { state: RootState }
+>(
     'messages/sendMessage',
-    async (message: { text: string, destKey: string }) => {
-        //todo encrypt message
-        const dispatch = useDispatch();
-        const keys = useSelector((state: RootState) => state.security!.rsa)
-        let encryptedMessage = await generateEncryptedMessage(message.destKey, keys, message.text)
+    async (message: { text: string, dest: string, destKeys: Array<string> }, thunkApi) => {
+        thunkApi.dispatch(setSendState(true))
+        await thunkApi.dispatch(fetchMessages())
 
-        await postMessage(encryptedMessage)
-        
-        return encryptedMessage;
+        const keys = thunkApi.getState().security.rsa;
+        let id = -1;
+
+        let database_key = thunkApi.getState().security.database
+        if (database_key != null) {
+
+            for (let destKey of message.destKeys) {
+                let encryptedMessage = await generateEncryptedMessage(destKey, keys, message.text, message.dest);
+                id = await postMessage(encryptedMessage);
+            }
+            if (id != -1) {
+                let database = await LocalStorage.getStorage(database_key)
+                await database.saveMessage(id, "", message.dest, "self", true, message.text)
+            }
+        }
+        thunkApi.dispatch(setSendState(false))
+        return id;
     }
 );
 
 export const deleteMessages = createAsyncThunk(
     'messages/deleteMessages',
-    async (ids: Array<string>) => {
+    async (ids: Array<number>) => {
         //todo SQL Lite remove
     }
 );
 
-export const fetchMessages = createAsyncThunk(
+
+
+export const fetchMessages = createAsyncThunk<
+    { messages: Array<Message>, maxid: number },
+    string | void,
+    { state: RootState }
+>(
     'messages/fetchMessages',
-    async () => {
-        //todo get latest message id from SQL Lite
-        // const data = await getMessageById();
-        const data = await getLastMessages();
-        let messages: Array<Message> = []
-        //todo decrypt and resolve accruate timestamp and pubkey
-        for (let item of data) {
-            messages.push({
-                id: item.id,
-                data: null,
-                timestamp: item.pub_date,
-                source: null,
-                message: item.message_text
-            });
+    async (arg, thunkApi) => {
+        thunkApi.dispatch(setFetchState(true))
+        let messages: Array<Message> = [];
+
+        let maxid = 0;
+
+        let database_key = thunkApi.getState().security.database
+        if (database_key != null) {
+            let database = await LocalStorage.getStorage(database_key)
+            let id = thunkApi.getState().message.id + 1
+            console.log(`Fething messages from ${id}`)
+            const data = await getMessageGtId(id.toString());
+            console.log(`Fetched ${data.length} messages`)
+            let private_key
+            if (arg)
+                private_key = arg
+            else
+                private_key = thunkApi.getState().security.rsa?.private
+
+            if (private_key != null) {
+                let friends = thunkApi.getState().friends.Friends;
+                for (let item of data) {
+                    if (item.id > maxid)
+                        maxid = item.id
+
+                    let decryptedMsg = await decryptMessage(item, private_key)
+
+                    if (decryptedMsg != null && decryptedMsg.message != null && decryptedMsg.dest != null) {
+                        let source = decryptedMsg.source
+                        if (source == null) source = "unknown"
+                        //todo validate message (check if signed correctly)
+                        //if not set source to unknown
+                        await database.saveMessage(decryptedMsg.id, "", decryptedMsg.dest, source, false, decryptedMsg.message)
+                        for (let friend of friends) {
+                            if (friend.pubKey == decryptedMsg.source) {
+                                decryptedMsg.source = friend.nickname
+                                break;
+                            }
+                        }
+                        messages.push(decryptedMsg)
+                    } else {
+                        messages.push(item)
+                    }
+                }
+
+            }
         }
-        return messages;
+        thunkApi.dispatch(setFetchState(false))
+        return { messages: messages, maxid: maxid };
     }
 );
-
 
 export const MessageStoreSlice = createSlice({
     name: "messages",
     initialState: initialState,
     reducers: {},
     extraReducers: (builder) => {
-        builder.addCase(fetchMessages.fulfilled, (state, action) => {
-            let maxid = state.id;
-            action.payload.forEach(
-                (message) => {
-                    //fech from id not yet implemented need guard
-                    if(state.id< (+message.id)){
-                        state.messages.push(message)
-                    }
-                    if((+message.id) > maxid) {
-                        maxid = (+message.id);
-                    }
-                    state.id = maxid
-                }
-            );
-        })
-        builder.addCase(deleteMessages.fulfilled, (state, action) => {
-            state.messages = state.messages.filter((msg) => {
-                action.meta.arg.some((id) => { msg.id == id })
+        builder
+            .addCase(fetchMessages.fulfilled, (state, action) => {
+                action.payload.messages.forEach((message) => {
+                    if (message.dest == 'board' || message.dest == undefined)
+                        state.boardMessages.push(message);
+                    else if (message.dest == state.currentPrivate)
+                        state.privateConversation.push(message);
+                });
+                if (action.payload.maxid > state.id)
+                    state.id = action.payload.maxid;
+
             })
-        })
-        builder.addCase(loadStoredMessages.fulfilled, (state, action) => {
-            state.id = action.payload.id;
-            state.selfid = action.payload.selfid;
-            action.payload.messages.forEach(
-                (message) => state.messages.push(message)
-            );
-        })
-        builder.addCase(sendMessage.fulfilled, (state, action) => {
-            state.messages.push({
-                id: `SELF-${state.selfid}`,
-                // data: action.payload,
-                data: null,
-                message: action.meta.arg.text,
-                timestamp: null,
-                source: 'SELF'
-            });
-            state.selfid++;
-        })
+            .addCase(deleteMessages.fulfilled, (state, action) => {
+                state.boardMessages = state.boardMessages.filter((msg) => {
+                    action.meta.arg.some((id) => { msg.id == id })
+                })
+            })
+            .addCase(loadStoredMessages.fulfilled, (state, action) => {
+                if (action.meta.arg) {
+                    state.privateConversation = []
+                    state.currentPrivate = action.meta.arg
+                }
+                action.payload.forEach((message) => {
+                    if (action.meta.arg)
+                        state.privateConversation.push(message)
+                    else
+                        state.boardMessages.push(message)
+                    if (+message.id > state.id)
+                        state.id = (+message.id)
+                });
+                console.log(`Loaded ${action.payload.length} messeges. Max id ${state.id}`)
+            })
+            .addCase(sendMessage.fulfilled, (state, action) => {
+                console.log("fullfiled ", action.payload)
+                if (action.payload != -1) {
+                    if (action.meta.arg.dest == 'board')
+                        state.boardMessages.push({
+                            id: action.payload,
+                            data: null,
+                            message: action.meta.arg.text,
+                            timestamp: null,
+                            dest: 'board',
+                            source: 'You',
+                            self: true
+                        });
+                    else {
+                        state.privateConversation.push({
+                            id: action.payload,
+                            data: null,
+                            message: action.meta.arg.text,
+                            timestamp: null,
+                            dest: action.meta.arg.dest,
+                            source: 'You',
+                            self: true
+                        });
+                    }
+                    state.id = action.payload
+                }
+            })
+            .addCase(resetMessages, (state, action) => {
+                state.boardMessages = [];
+                state.privateConversation = [];
+                state.currentPrivate = "";
+                state.id = 0;
+                state.fetchActive = false;
+                state.sendActive = false;
+            })
+            .addCase(setFetchState, (state, action) => {
+                state.fetchActive = action.payload;
+            })
+            .addCase(setSendState, (state, action) => {
+                state.sendActive = action.payload;
+            })
     }
 });
 
