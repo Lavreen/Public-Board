@@ -134,6 +134,8 @@ export const fetchMessages = createAsyncThunk<
                         if (source == null) source = "unknown"
                         //todo validate message (check if signed correctly)
                         //if not set source to unknown
+                        if (decryptedMsg.dest != 'board' && decryptedMsg.dest != undefined)
+                            decryptedMsg.dest = source
                         await database.saveMessage(decryptedMsg.id, "", decryptedMsg.dest, source, false, decryptedMsg.message)
                         for (let friend of friends) {
                             if (friend.pubKey == decryptedMsg.source) {
