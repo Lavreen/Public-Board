@@ -206,7 +206,7 @@ export default class LocalStorage {
                                     id: item.id,
                                     data: null,
                                     timestamp: item.timestamp,
-                                    source: item.source,
+                                    source: item.nickname,
                                     dest: dest,
                                     message: item.message,
                                     self: item.self

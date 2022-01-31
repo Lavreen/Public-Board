@@ -13,14 +13,12 @@ export default function HomeScreen() {
             <Image style={styles.center} source={require('../assets/logo.png')}></Image>
             <Title style={styles.title}>Public Board</Title>
 
-            {/* <Button mode="contained" style={styles.homeScreenButton} onPress={() => navigation.navigate('Messages')}>
-                    Messages
-                </Button> */}
-            {/* <Button mode="contained" style={styles.homeScreenButton} onPress={() => navigation.navigate('CreateMessage')}>
-                    New message
-                </Button> */}
+
             <Button mode="contained" style={styles.margin} onPress={() => navigation.navigate('Board' as never)}>
                 Board
+            </Button>
+            <Button mode="contained" style={styles.margin} onPress={() => navigation.navigate('Conversations' as never)}>
+                Conversations
             </Button>
             <Button mode="contained" style={styles.margin} onPress={() => navigation.navigate('Friends' as never)}>
                 Friends
