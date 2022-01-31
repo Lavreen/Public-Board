@@ -46,5 +46,10 @@ export const styles = StyleSheet.create({
 	modal: {
 		backgroundColor: 'white',
 		padding: 20
+	},
+	fullscreenModal: {
+		backgroundColor: 'white',
+		width: '100%',
+		height: '120%'
 	}
 });

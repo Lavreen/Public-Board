@@ -1,4 +1,4 @@
-import React, { FC, useEffect, useState } from 'react';
+import React, { FC, useState } from 'react';
 import {
   SafeAreaView,
   StyleSheet,
@@ -15,6 +15,7 @@ import { Button, IconButton, TextInput } from 'react-native-paper';
 import { unwrapResult } from '@reduxjs/toolkit'
 import type { FriendsNavigationParams } from './FriendsScreen'
 import QRCode from 'react-native-qrcode-svg';
+import { AppDispatch } from '../redux/Store';
 
 interface Props {
     placeholder: string;
@@ -44,8 +45,8 @@ const ScannerScreen: FC<{props:CamProps}> = ({props}) =>{
             props.setCam(false);
           }
         }}
-        flashMode={RNCamera.Constants.FlashMode.off}
-        ratio={"4:3"}
+        // flashMode={RNCamera.Constants.FlashMode.off}
+        // ratio={"4:3"}
         reactivate={true}
       />
     );
@@ -56,7 +57,7 @@ const AddFriendScreen: FC = () => {
 
   const navigation = useNavigation();
   const route = useRoute<RouteProp<FriendsNavigationParams, 'obj' >>();
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const [nameInput, setNameInput] = 
     useState<string>(route.params.details == true ? route.params.friend.nickname: "")
   const [pubKeyInput, setPubKeyInput] = 
@@ -118,7 +119,7 @@ const AddFriendScreen: FC = () => {
           setTimeout(() => setWarningText(""), 3000);
         }
       })
-      .catch((rejectedVal) => {
+      .catch(() => {
       })
 
     }

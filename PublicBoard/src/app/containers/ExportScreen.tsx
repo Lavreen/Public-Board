@@ -8,6 +8,7 @@ import { RootState } from "../redux/Store";
 
 const ExportScreen: FC = () => {
     const privateKey = useSelector((state: RootState) => state.security.rsa?.private) ?? "Error";
+    const publicKey = useSelector((state: RootState) => state.security.rsa?.public) ?? "Error";
     const windowWidth = Dimensions.get('window').width;
 
     return (
@@ -16,13 +17,13 @@ const ExportScreen: FC = () => {
                 <Appbar.Content title="Export" />
             </Appbar.Header>
 
-            <Title style={styles.title && styles.center}>Your private key</Title>
+            <Title style={styles.title && styles.center}>Your public and private key</Title>
 
             <View>
                 <View style={styles.center} >
                     <QRCode
                         size={windowWidth - 20}
-                        value={privateKey}
+                        value={publicKey + ';' + privateKey}
                     />
                 </View>
                 <Button mode="contained" style={styles.margin} onPress={() => Clipboard.setString(privateKey)}>

@@ -96,7 +96,7 @@ const FriendsScreen: FC = () => {
             }
           ]
         }
-        onPress={() => navigation.navigate("AddFriend", {details: false, friend: null})}
+        onPress={() => navigation.navigate("AddFriend" as never, {details: false, friend: null} as never)}
       />
 
     </SafeAreaView>

@@ -47,25 +47,32 @@ export const deleteData = createAsyncThunk<
 
 export const createNewKeys = createAsyncThunk<
     { rsa_keys: KeyPair, database_key: string },
-    string,
+    { passphrase: string, keys: string | null },
     { state: RootState }
 >(
     'security/createNewKeys',
-    async (passphrase) => {
+    async (arg) => {
         let data: any = {}
+        if(arg.keys){
+            let splited = arg.keys.split(';')
+            data.rsa_keys = {
+                public: splited[0],
+                private: splited[1]
+            } 
+        }else
+            data.rsa_keys = await RSA.generateKeys(2048);
 
-        data.rsa_keys = await RSA.generateKeys(2048);
         data.database_key = await AES.randomKey(32);
 
         let store: any = {}
-        if (passphrase == '') {
+        if (arg.passphrase == '') {
             store.encrypted = false;
             store.data = JSON.stringify(data);
         } else {
             try {
                 store.encrypted = true;
                 store.salt = await AES.randomKey(32)
-                let aes_key = await AES.pbkdf2(passphrase, store.salt, 10000, 256)
+                let aes_key = await AES.pbkdf2(arg.passphrase, store.salt, 10000, 256)
                 let aes_iv = await AES.randomKey(16);
                 store.aes_iv = aes_iv;
                 store.data = await AES.encrypt(JSON.stringify(data), aes_key, aes_iv, 'aes-256-cbc')
