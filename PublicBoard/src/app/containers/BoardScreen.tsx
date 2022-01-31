@@ -10,6 +10,7 @@ import { theme } from '../assets/paperTheme';
 const BoardScreen: FC = () => {
 
     const [messageText, setMessageText] = useState<string>("")
+    const [send, setSend] = useState<boolean>(false);
     const [showUndecrypted, setShowUndecrypted] = useState<boolean>(false);
 
     const messages = useSelector((state: RootState) => state.message.boardMessages);
@@ -19,17 +20,20 @@ const BoardScreen: FC = () => {
     const dispatch = useDispatch();
 
     const submitMessage = () => {
-        if(messageText == "") return;
+        if (messageText == "") return;
         let keys: Array<string> = []
-        friends.forEach((friend)=>{
+        friends.forEach((friend) => {
             keys.push(friend.pubKey)
         });
-        if(keys.length > 0){
-            //todo set dispatch type to avoid then error
-            dispatch(sendMessage({ text: messageText, destKeys: keys, dest: 'board'})).then(()=>{
-                setMessageText("");
-            });
+        if (keys.length > 0) {
+            dispatch(sendMessage({ text: messageText, destKeys: keys, dest: 'board' }))
+            setSend(true)
         }
+    }
+
+    if (send && !inputLocked) {
+        setMessageText("");
+        setSend(false);
     }
 
     const _render_item = (message: Message) => {
@@ -41,13 +45,13 @@ const BoardScreen: FC = () => {
                         titleStyle={textStylesheet.undecrypted}
                         descriptionNumberOfLines={1}
                         description={message.data}
-                        
+
                     />
                 );
             } else
                 return null;
         } else {
-            if(message.self){
+            if (message.self) {
                 return (
                     <List.Item
                         title={message.source}
@@ -56,7 +60,7 @@ const BoardScreen: FC = () => {
                         description={message.message}
                     />
                 );
-            } else{
+            } else {
                 return (
                     <List.Item
                         title={message.source}
@@ -89,11 +93,11 @@ const BoardScreen: FC = () => {
                 data={messages}
                 inverted={true}
                 contentContainerStyle={{ flexDirection: 'column-reverse' }}
-                keyExtractor={ (item)=>item.id.toString() }
+                keyExtractor={(item) => item.id.toString()}
                 renderItem={(item) => _render_item(item.item)}
             />
-            <ActivityIndicator animating={loading} hidesWhenStopped={true}/>
-            
+            {loading && <ActivityIndicator animating={loading} hidesWhenStopped={true} />}
+
             <KeyboardAvoidingView>
                 <TextInput
                     multiline={true}
@@ -117,10 +121,10 @@ const BoardScreen: FC = () => {
 export default BoardScreen
 
 const textStylesheet = StyleSheet.create({
-    undecrypted:{
+    undecrypted: {
         color: 'red'
     },
-    user:{
+    user: {
         color: 'green'
     }
 });

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Image } from 'react-native';
+import { Image } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../redux/Store';
@@ -7,7 +7,7 @@ import { loadKeys, setActive, Status } from '../redux/SecurityReducer';
 import MainNavigator from '../navigation/MainNavigator';
 import LoginScreen from './LoginScreen';
 import CreateUserScreeen from './CreateUserScreen';
-import { Surface, Provider as PaperProvider, Title } from 'react-native-paper';
+import { Provider as PaperProvider, Title } from 'react-native-paper';
 import { styles, theme } from '../assets/paperTheme';
 import { loadFriends } from '../redux/FriendsReducer';
 import { loadStoredMessages } from '../redux/MessagesReducer';
@@ -41,11 +41,9 @@ export default function RootScreen(): JSX.Element | null {
         setTimeout(() => { dispatch(setActive()) }, 2000)
         return (
             <PaperProvider theme={theme}>
-                <Surface style={styles.title}>
-                    <Image source={require('../assets/logo.png')}></Image>
-                    <Title>Welcome to...</Title>
-                    <Title>Public Board</Title>
-                </Surface>
+                <Image style={styles.center} source={require('../assets/logo.png')}></Image>
+                <Title style={styles.title} >Welcome to...</Title>
+                <Title style={styles.title} >Public Board</Title>
             </PaperProvider>
         )
     }

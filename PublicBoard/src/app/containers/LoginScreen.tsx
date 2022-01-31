@@ -1,31 +1,32 @@
 import React, { useState } from 'react';
-import { View, TextInput, Image } from 'react-native';
+import { Image, KeyboardAvoidingView } from 'react-native';
 import { useDispatch } from 'react-redux';
-import { deleteData, loadKeys } from '../redux/SecurityReducer';
-import { Text, Surface, Button, Provider as PaperProvider, Title } from 'react-native-paper';
-import { styles, theme } from '../assets/paperTheme';
+import { loadKeys } from '../redux/SecurityReducer';
+import { TextInput, Button, Title } from 'react-native-paper';
+import { styles } from '../assets/paperTheme';
+import { ScrollView } from 'react-native-gesture-handler';
 
 
-export default function LoginScreen(): JSX.Element | null  {
-    const dispatch = useDispatch();	
+export default function LoginScreen(): JSX.Element | null {
+    const dispatch = useDispatch();
     const [password, setPassword] = useState('');
 
-    return(
-        <PaperProvider theme={theme}>
-            <Surface style={styles.title}>
-                <Image source={require('../assets/logo.png')}></Image>
-                <Title>Public Board</Title>
-                <Title>Passprase login required</Title>
-            </Surface>
-                <Text>Password</Text>
+    return (
+        <ScrollView>
+            <Image style={styles.center} source={require('../assets/logo.png')}></Image>
+            <Title style={styles.title} >Public Board</Title>
+            <Title style={styles.title} >Passprase login required</Title>
+
+            <KeyboardAvoidingView behavior="padding">
                 <TextInput
+                    label={"Password"}
+                    mode="outlined"
+                    secureTextEntry
+                    style={styles.margin}
                     onChangeText={(text) => setPassword(text)}
-                    value={password}
                 />
-                <Button mode="contained" onPress={() => dispatch(loadKeys(password))}>Login</Button>
-                <Text></Text>
-                
-                <Button mode="contained" onPress={() => dispatch(deleteData())}>Wipe User Data</Button>
-        </PaperProvider>
+                <Button style={styles.margin} mode="contained" onPress={() => dispatch(loadKeys(password))}>Login</Button>
+            </KeyboardAvoidingView>
+        </ScrollView>
     )
 }

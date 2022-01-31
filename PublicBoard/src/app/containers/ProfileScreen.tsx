@@ -1,27 +1,35 @@
-import React from 'react';
-import { Dimensions, StyleSheet, View } from 'react-native';
+import React, { FC } from 'react';
+import { Clipboard, Dimensions, View } from 'react-native';
+import { Appbar, Button, Title } from 'react-native-paper';
 import QRCode from 'react-native-qrcode-svg';
 import { useSelector } from 'react-redux';
 import { RootState } from '../redux/Store';
+import { styles } from '../assets/paperTheme';
 
-export default function ProfileScreen() {
-    const publicKey = useSelector((state: RootState) => state.security.rsa?.public);
+const ProfileScreen: FC = () => {
+    const publicKey = useSelector((state: RootState) => state.security.rsa?.public) ?? "error";
     const windowWidth = Dimensions.get('window').width;
 
     return (
-        <View style={styleSheet.center}>
-            <QRCode
-                size={windowWidth - 10}
-                value={publicKey}
-            />
+        <View>
+            <Appbar.Header>
+                <Appbar.Content title="Profile" />
+            </Appbar.Header>
+
+            <Title style={styles.title && styles.center}>Your public key</Title>
+
+            <View style={styles.center} >
+                <QRCode
+                    size={windowWidth - 20}
+                    value={publicKey}
+                />
+            </View>
+
+            <Button mode="contained" style={styles.margin} onPress={() => Clipboard.setString(publicKey)}>
+                Copy to clipboard
+            </Button>
         </View>
     );
 }
 
-const styleSheet = StyleSheet.create({
-    center:{
-        padding: 10,
-        justifyContent: 'center',
-        alignItems: 'center'
-    }
-})
+export default ProfileScreen;

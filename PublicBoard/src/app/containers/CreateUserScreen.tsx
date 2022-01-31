@@ -1,33 +1,36 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Image } from 'react-native';
+import { Image, KeyboardAvoidingView } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { styles, theme } from '../assets/paperTheme';
-import { Text, TextInput, Surface, Button, DefaultTheme, Provider as PaperProvider, List, Menu, Title } from 'react-native-paper';
+import { TextInput, Button, Provider as PaperProvider, Title } from 'react-native-paper';
 import { createNewKeys } from '../redux/SecurityReducer';
+import { ScrollView } from 'react-native-gesture-handler';
 
 
-export default function CreateUserScreeen(): JSX.Element | null  {
-    const dispatch = useDispatch();	
+export default function CreateUserScreeen(): JSX.Element | null {
+    const dispatch = useDispatch();
     const [password, setPassword] = useState('');
 
-    return(
+    return (
         <PaperProvider theme={theme}>
-            <Surface style={styles.title}>
-                <Image source={require('../assets/logo.png')}></Image>
-                <Title>Public Board</Title>
-                <Title>Creating new Account</Title>
-            </Surface>
-            <Text></Text>
-            <Text>Password (optional)</Text>
-            <TextInput
-                onChangeText={(text) => setPassword(text)}
-                value={password}
-            />
-            <Text></Text>
-            {/* <Button title="Create Account" onPress={() => dispatch(createNewKeys(password))}></Button> */}
-            <Button mode="contained" onPress={() => dispatch(createNewKeys(password))}>
-            Create Account
+            <ScrollView>
+                <Image style={styles.center} source={require('../assets/logo.png')}></Image>
+                <Title style={styles.title} >Public Board</Title>
+                <Title style={styles.title} >Creating new Account</Title>
+
+                <KeyboardAvoidingView behavior="padding">
+                    <TextInput
+                        label={"Password"}
+                        mode="outlined"
+                        secureTextEntry
+                        style={styles.margin}
+                        onChangeText={(text) => setPassword(text)}
+                    />
+                </KeyboardAvoidingView>
+                <Button style={styles.margin} mode="contained" onPress={() => dispatch(createNewKeys(password))}>
+                    Create Account
                 </Button>
+            </ScrollView>
         </PaperProvider>
     )
 }

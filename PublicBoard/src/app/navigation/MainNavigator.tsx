@@ -8,11 +8,11 @@ import FriendsScreen from '../containers/FriendsScreen'
 import AddFriendScreen from '../containers/AddFriendScreen'
 import BoardScreen from '../containers/BoardScreen'
 import ProfileScreen from '../containers/ProfileScreen'
-
+import OptionsScreen from '../containers/OptionsScreen'
+import ExportScreen from '../containers/ExportScreen'
 
 const Stack = createStackNavigator();
 
-//TODO define proper navigators with exported types
 export default function MainNavigator() {
 	return (
 		<Stack.Navigator
@@ -27,6 +27,8 @@ export default function MainNavigator() {
 			<Stack.Screen name="AddFriend" component={AddFriendScreen} />
 			<Stack.Screen name="Board" component={BoardScreen} />
 			<Stack.Screen name="Profile" component={ProfileScreen} />
+			<Stack.Screen name="Options" component={OptionsScreen} />
+			<Stack.Screen name="Export" component={ExportScreen} />
 		</Stack.Navigator>
 	);
 }

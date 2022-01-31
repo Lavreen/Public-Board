@@ -3,11 +3,10 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 import { KeyPair, RSA } from 'react-native-rsa-native';
 import AES from 'react-native-aes-crypto';
 import { RootState } from './Store';
-import { loadFriends, resetFriends } from './FriendsReducer';
+import { resetFriends } from './FriendsReducer';
 import LocalStorage from '../utils/LocalStoreage';
 import { resetMessages } from './MessagesReducer';
 
-//todo Setup aes rsa native code
 export enum Status { Active, Initial, Missing, Login, LoginError, Loaded }
 export type SecurityState = {
     status: Status,
@@ -34,7 +33,7 @@ export const deleteData = createAsyncThunk<
     'security/deleteData',
     async (arg, thunkApi) => {
         let database_key = thunkApi.getState().security.database
-        if(database_key != null){
+        if (database_key != null) {
             await LocalStorage.dropStorage(database_key);
         }
         EncryptedStorage.removeItem('PublicBoardStore').then(() => {
@@ -63,14 +62,14 @@ export const createNewKeys = createAsyncThunk<
             store.encrypted = false;
             store.data = JSON.stringify(data);
         } else {
-            try{
+            try {
                 store.encrypted = true;
                 store.salt = await AES.randomKey(32)
                 let aes_key = await AES.pbkdf2(passphrase, store.salt, 10000, 256)
                 let aes_iv = await AES.randomKey(16);
                 store.aes_iv = aes_iv;
                 store.data = await AES.encrypt(JSON.stringify(data), aes_key, aes_iv, 'aes-256-cbc')
-            }catch(e){
+            } catch (e) {
                 console.log(JSON.stringify(e))
             }
         }
@@ -81,7 +80,7 @@ export const createNewKeys = createAsyncThunk<
 
 export const loadKeys = createAsyncThunk<
     { status: Status, data: any },
-    void,
+    string | void,
     { state: RootState }
 >(
     'security/loadKeys',
@@ -98,7 +97,7 @@ export const loadKeys = createAsyncThunk<
 
         if (!store.encrypted) return { status: Status.Loaded, data: await JSON.parse(store.data) };
 
-        if (!passphrase) return { status: Status.Login, data: null  };
+        if (!passphrase) return { status: Status.Login, data: null };
 
         let aes_key = await AES.pbkdf2(passphrase, store.salt, 10000, 256);
         try {
@@ -107,6 +106,30 @@ export const loadKeys = createAsyncThunk<
             return { status: Status.Loaded, data: store.data };
         } catch (e) {
             return { status: Status.LoginError, data: null }
+        }
+    }
+);
+
+export const checkPassword = createAsyncThunk<
+    boolean,
+    string | null,
+    { state: RootState }
+>(
+    'security/checkPassword',
+    async (passphrase) => {
+        let store = null;
+        try {
+            store = await EncryptedStorage.getItem('PublicBoardStore');
+            if (store == null) return false;
+            store = await JSON.parse(store);
+            if (!store.encrypted) return true;
+            if (!passphrase) return false;
+            if (passphrase == null) return false;
+            let aes_key = await AES.pbkdf2(passphrase, store.salt, 10000, 256);
+            store.data = await AES.decrypt(store.data, aes_key, store.aes_iv, 'aes-256-cbc');
+            return true
+        } catch (e) {
+            return false
         }
     }
 );
