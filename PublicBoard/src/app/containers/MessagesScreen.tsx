@@ -11,14 +11,15 @@ import { useRoute } from '@react-navigation/native';
 
 const MessagesScreen: FC = () => {
 	const dispatch = useDispatch();
-	//todo type...
 	const route = useRoute<any>();
 	const pubkey = route.params.pubkey
 	const nickname = route.params.nickname
 
 	const [messageText, setMessageText] = useState<string>("")
 	const [send, setSend] = useState<boolean>(false);
+	const [showUndecrypted, setShowUndecrypted] = useState<boolean>(false);
 
+	const friends = useSelector((state: RootState) => state.friends.Friends);
 	const messages = useSelector((state: RootState) => state.message.messages);
 	const loading = useSelector((state: RootState) => state.message.fetchActive);
 	const inputLocked = useSelector((state: RootState) => state.message.sendActive);
@@ -31,8 +32,19 @@ const MessagesScreen: FC = () => {
 	const submitMessage = () => {
 		if (messageText == "") return;
 
-		dispatch(sendMessage({ text: messageText, destKeys: [pubkey], dest: pubkey }))
-		setSend(true)
+		if (pubkey == "board") {
+			let keys: Array<string> = []
+			friends.forEach((friend) => {
+				keys.push(friend.pubKey)
+			});
+			if (keys.length > 0) {
+				dispatch(sendMessage({ text: messageText, destKeys: keys, dest: 'board' }))
+				setSend(true)
+			}
+		} else {
+			dispatch(sendMessage({ text: messageText, destKeys: [pubkey], dest: pubkey }))
+			setSend(true)
+		}
 	}
 
 	if (send && !inputLocked) {
@@ -42,7 +54,18 @@ const MessagesScreen: FC = () => {
 
 	const _render_item = (message: Message) => {
 		if (message.message == null) {
-			return null;
+			if (showUndecrypted) {
+				return (
+					<List.Item
+						title={"Couldn't decrypt"}
+						titleStyle={textStylesheet.undecryptedTitle}
+						descriptionNumberOfLines={1}
+						description={message.data}
+
+					/>
+				);
+			} else
+				return null;
 		} else {
 			if (message.source == "You") {
 				return (
@@ -76,16 +99,34 @@ const MessagesScreen: FC = () => {
 
 	return (
 		<PaperProvider theme={theme}>
-			<Appbar.Header>
-				<Appbar.Content
-					title="Messages"
-					subtitle={nickname}
-				/>
-				<Appbar.Action
-					icon="refresh"
-					onPress={() => dispatch(fetchMessages())}
-				/>
-			</Appbar.Header>
+			{pubkey != "board" &&
+				(<Appbar.Header>
+					<Appbar.Content
+						title="Messages"
+						subtitle={nickname}
+					/>
+					<Appbar.Action
+						icon="refresh"
+						onPress={() => dispatch(fetchMessages())}
+					/>
+				</Appbar.Header>)
+			}
+			{pubkey == "board" &&
+				(<Appbar.Header>
+					<Appbar.Content
+						title="Public Board"
+						subtitle={showUndecrypted ? "All messages" : "Only decrypted messages"}
+					/>
+					<Appbar.Action
+						icon={showUndecrypted ? "book-lock" : "book"}
+						onPress={() => setShowUndecrypted(!showUndecrypted)}
+					/>
+					<Appbar.Action
+						icon="refresh"
+						onPress={() => dispatch(fetchMessages())}
+					/>
+				</Appbar.Header>)
+			}
 
 			<FlatList
 				data={messages}
@@ -128,6 +169,9 @@ const textStylesheet = StyleSheet.create({
 		alignSelf: 'flex-end',
 		marginRight: 10,
 		marginLeft: 50
+	},
+	undecryptedTitle: {
+		color: 'red'
 	},
 	title: {
 		marginLeft: 20

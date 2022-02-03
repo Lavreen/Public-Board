@@ -14,7 +14,12 @@ export default function HomeScreen() {
             <Title style={styles.title}>Public Board</Title>
 
 
-            <Button mode="contained" style={styles.margin} onPress={() => navigation.navigate('Board' as never)}>
+            <Button mode="contained" style={styles.margin} onPress={() =>
+                navigation.navigate(
+                    'Messages' as never,
+                    { nickname: "", pubkey: "board" } as never
+                )
+            }>
                 Board
             </Button>
             <Button mode="contained" style={styles.margin} onPress={() => navigation.navigate('Conversations' as never)}>

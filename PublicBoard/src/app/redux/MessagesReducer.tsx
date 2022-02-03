@@ -160,9 +160,13 @@ export const MessageStoreSlice = createSlice({
                 action.payload.messages.forEach((message) => {
                     if(message.dest == state.currentDest)
                         state.messages.push(message)
+                    else if(state.currentDest == 'board' && message.dest == null)
+                        state.messages.push(message)
+                    if (+message.id > state.id)
+                        state.id = (+message.id)
                 });
-                if (action.payload.maxid > state.id)
-                    state.id = action.payload.maxid;
+                // if (action.payload.maxid > state.id)
+                //     state.id = action.payload.maxid;
 
             })
             .addCase(deleteMessages.fulfilled, (state, action) => {
@@ -199,6 +203,8 @@ export const MessageStoreSlice = createSlice({
                             source: 'You'
                         })
                     }
+                    if(state.id < action.payload)
+                        
                     state.id = action.payload
                 }
             })

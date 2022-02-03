@@ -6,7 +6,6 @@ import MessagesScreen from '../containers/MessagesScreen'
 import ConversationsScreen from '../containers/ConversationsScreen'
 import FriendsScreen from '../containers/FriendsScreen'
 import AddFriendScreen from '../containers/AddFriendScreen'
-import BoardScreen from '../containers/BoardScreen'
 import ProfileScreen from '../containers/ProfileScreen'
 import OptionsScreen from '../containers/OptionsScreen'
 import ExportScreen from '../containers/ExportScreen'
@@ -25,7 +24,6 @@ export default function MainNavigator() {
 			<Stack.Screen name="Conversations" component={ConversationsScreen} />
 			<Stack.Screen name="Friends" component={FriendsScreen} />
 			<Stack.Screen name="AddFriend" component={AddFriendScreen} />
-			<Stack.Screen name="Board" component={BoardScreen} />
 			<Stack.Screen name="Profile" component={ProfileScreen} />
 			<Stack.Screen name="Options" component={OptionsScreen} />
 			<Stack.Screen name="Export" component={ExportScreen} />
