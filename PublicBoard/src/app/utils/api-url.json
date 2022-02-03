@@ -1,5 +1,7 @@
 { 
-    "url": "http://127.0.0.1:8000/",
+    "local_url": "http://192.168.1.18:8000/",
+    ".url": "http://thealgodoo.pythonanywhere.com/",
+    "url": "http://publicboard.herokuapp.com/",
     "today": "app_messages/actions/today_messages/",
     "last": "app_messages/actions/last_messages/",
     "byId": "app_messages/actions/",

@@ -31,7 +31,7 @@ const MessagesScreen: FC = () => {
 	const submitMessage = () => {
 		if (messageText == "") return;
 
-		dispatch(sendMessage({ text: messageText, destKeys: [pubkey], dest: 'private' }))
+		dispatch(sendMessage({ text: messageText, destKeys: [pubkey], dest: pubkey }))
 		setSend(true)
 	}
 

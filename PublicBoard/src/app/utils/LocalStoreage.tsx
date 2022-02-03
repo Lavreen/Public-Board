@@ -193,7 +193,7 @@ export default class LocalStorage {
                         `
                         SELECT messages.id, timestamp, nickname, message 
                         FROM messages INNER JOIN friends ON messages.source = friends.pubkey
-                        WHERE messages.dest = 'private' AND messages.source = ?
+                        WHERE messages.dest = ?
                         ORDER BY messages.id;
                         `,
                         [pubkey],
@@ -206,7 +206,7 @@ export default class LocalStorage {
                                     data: null,
                                     timestamp: item.timestamp,
                                     source: item.nickname,
-                                    dest: 'private',
+                                    dest: pubkey,
                                     message: item.message
                                 });
                             }

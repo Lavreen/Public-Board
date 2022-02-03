@@ -58,8 +58,7 @@ export async function decryptMessage(message: EncryptedMessage, private_key: str
             timestamp: "",
             dest: decrypted_data.dest,
             source: decrypted_data.pub_key,
-            message: decrypted_data.text,
-            self: false
+            message: decrypted_data.text
         }
         return msg
     }
@@ -70,8 +69,7 @@ export async function decryptMessage(message: EncryptedMessage, private_key: str
             timestamp: null,
             dest: 'board',
             source: null,
-            message: null,
-            self: false
+            message: null
         }
         return msg
     }
