@@ -1,4 +1,4 @@
-import React, { FC, useState } from 'react';
+import React, { FC, useEffect, useState } from 'react';
 import {
   SafeAreaView,
   StyleSheet,
@@ -16,18 +16,6 @@ import { unwrapResult } from '@reduxjs/toolkit'
 import type { FriendsNavigationParams } from './FriendsScreen'
 import QRCode from 'react-native-qrcode-svg';
 import { AppDispatch } from '../redux/Store';
-
-interface Props {
-    placeholder: string;
-    value: string;
-    onChangeText?: (text: string) => void;
-}
-
-interface Props {
-  placeholder: string;
-  value: string;
-  onChangeText?: (text: string) => void;
-}
 
 interface CamProps {
   setKeyFunc: (arg: string) => void
@@ -54,7 +42,7 @@ const ScannerScreen: FC<{props:CamProps}> = ({props}) =>{
 
 
 const AddFriendScreen: FC = () => {
-
+  
   const navigation = useNavigation();
   const route = useRoute<RouteProp<FriendsNavigationParams, 'obj' >>();
   const dispatch = useDispatch<AppDispatch>();
@@ -66,23 +54,24 @@ const AddFriendScreen: FC = () => {
   const [warningText, setWarningText] = useState<string>("")
   const [editMode, setEditMode] = useState<boolean>(route.params.details == true ? false : true)
 
+  let timeout: NodeJS.Timeout
 
   const validatePubKey = (pubKey: string) :boolean => {
     let re = /-----BEGIN RSA PUBLIC KEY-----(.*)-----END RSA PUBLIC KEY-----/s;
       return re.test(pubKey);
   };
 
-  const handleAdd = async () => {
+  const handleAdd = async function () {
             
+    let localIfExists: boolean | null = null
+
     if(nameInput == "" || pubKeyInput == "") {
       setWarningText("Please fill every input")
-      setTimeout(() => setWarningText(""), 3000);
     }
     else {
       if(!validatePubKey(pubKeyInput)){
         setWarningText("Bad key input")
-        setTimeout(() => setWarningText(""), 3000);
-        //return
+        return
       }
 
       if(route.params.details == true && pubKeyInput == route.params.friend.pubKey){
@@ -96,35 +85,41 @@ const AddFriendScreen: FC = () => {
         navigation.goBack();
         return   
       }
-
+      
       await dispatch(checkPubKey(pubKeyInput))
       .then(unwrapResult)
       .then((ifExists: boolean) => {
-        if(!ifExists){
-          if(route.params.details == true){
-            let friendToEdit = {
-              id: route.params.friend.id,
-              nickname: nameInput,
-              pubKey: pubKeyInput,
-            }
-           
-            dispatch(editFriend(friendToEdit))
-            navigation.goBack();
-          } else {
-            dispatch(addFriend({nickname: nameInput, pubKey: pubKeyInput}))
-            navigation.goBack();
-          } 
-        } else {
-          setWarningText("This pubKey already exists")
-          setTimeout(() => setWarningText(""), 3000);
-        }
-      })
-      .catch(() => {
+        localIfExists = ifExists
       })
 
+      if(localIfExists!= null && localIfExists == false){
+        if(route.params.details == true){
+          let friendToEdit = {
+            id: route.params.friend.id,
+            nickname: nameInput,
+            pubKey: pubKeyInput,
+          }
+         
+          dispatch(editFriend(friendToEdit))
+          navigation.goBack();
+        } else {
+          dispatch(addFriend({nickname: nameInput, pubKey: pubKeyInput}))
+          navigation.goBack();
+        } 
+      } else {
+        setWarningText("This pubKey already exists")
+      }
+  
     }
   };
 
+  useEffect(() => {
+    timeout = setTimeout(() => setWarningText(""), 3000);
+    return function cleanup() {
+      clearTimeout(timeout);
+    }
+  }, [warningText]);
+  
   let scannerProps : CamProps = {
     setKeyFunc: (arg) => setPubKeyInput(arg),
     keyValidator: (arg: string) => validatePubKey(arg),

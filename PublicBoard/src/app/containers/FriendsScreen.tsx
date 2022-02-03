@@ -1,4 +1,4 @@
-import React, { FC, useEffect, useState } from 'react';
+import React, { FC, useCallback, useEffect, useState } from 'react';
 import {
   FlatList,
   SafeAreaView,
@@ -12,7 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 import { deleteFriends, Friend } from "../redux/FriendsReducer"
 import { RootState } from '../redux/Store';
 import { useDispatch, useSelector } from 'react-redux';
-import { List, IconButton, Searchbar } from 'react-native-paper';
+import { List, IconButton, Searchbar, Button } from 'react-native-paper';
 
 export type FriendsNavigationParams = {
   obj: {
@@ -28,9 +28,11 @@ const FriendsScreen: FC = () => {
   const friends = useSelector((state: RootState) => state.friends.Friends)
   const [searchInput, setsearchInput] = useState<string>("")
   const [selectionMode, setSelectionMode] = useState<boolean>()
-  const [selectedFriends, setSelectedFriends] = useState<Array<number>>([])
+  const [selectedFriends] = useState<Array<number>>([])
 
-  function manageSelected(id: number): boolean {
+  
+  const manageSelected = useCallback( 
+    (id: number): boolean  => {
 
     let idx = selectedFriends.indexOf(id)
 
@@ -45,7 +47,9 @@ const FriendsScreen: FC = () => {
       
       return false
     }
-  }
+  }, []
+  )  
+
   return (
     <SafeAreaView style={styles.container} >
 
@@ -59,17 +63,17 @@ const FriendsScreen: FC = () => {
 
       <IconButton
         icon="delete" size={35}
-        style={{ marginRight: 0, marginLeft: "auto", display: selectionMode == true ? "flex" : "none" }}
+        style={[styles.trashIcon, {display: selectionMode ? "flex" : "none"}]}
         onPress={() => {
           setSelectionMode(false);
           dispatch(deleteFriends(selectedFriends));
         }}
       />
-
+      
       <FlatList
         data={friends}
         renderItem={({ item }) => {
-          if (item.nickname.startsWith(searchInput)) {
+          if (item.nickname.toLocaleLowerCase().startsWith(searchInput.toLocaleLowerCase())) {
             return (
               <FriendItem
                 friend={{ id: item.id, nickname: item.nickname, pubKey: item.pubKey }}
@@ -124,6 +128,10 @@ const IconWithName: FC<{
   setIsSelected: React.Dispatch<React.SetStateAction<boolean>>
   selectFriend: (id: number) => boolean 
 }> = (props) => {
+  
+  const myFunc = function() : void {
+    props.setIsSelected(props.selectFriend(props.friendId))
+  }
 
   return (
     <TouchableOpacity
@@ -134,7 +142,7 @@ const IconWithName: FC<{
             ? getRandomColor(props.nickname) : "rgb(54,35,113)"
         }
       ]}
-      onPress={ () => {props.setIsSelected(props.selectFriend(props.friendId))} }
+      onPress={myFunc}
     >
     {props.isSelected == false ?
       <RNText style={{ fontSize: 30, color: "white" }}>{props.nickname.charAt(0)}</RNText>
@@ -162,13 +170,13 @@ const FriendItem: FC<{
       onPress={() => {props.navigation.navigate("AddFriend", {details: true, friend: props.friend}) }}
       description={props.friend.pubKey}
       onLongPress={() => {
-        setIsSelected(props.selectFriend(props.friend.id))
-      }
+          setIsSelected(props.selectFriend(props.friend.id))
+        }
       }
       left={() =>
         <IconWithName 
           friendId={props.friend.id}
-          nickname={props.friend.nickname.concat(props.friend.pubKey.charAt(0))} 
+          nickname={props.friend.nickname.concat(props.friend.pubKey.charAt(0).toLocaleUpperCase())} 
           isSelected={isSelected}
           setIsSelected={setIsSelected}
           selectFriend={props.selectFriend}
@@ -206,6 +214,10 @@ const styles = StyleSheet.create({
     fontSize: 30,
     marginLeft: 10,
     color: "#101"
+  },
+  trashIcon: {
+    marginRight: 2,
+    marginLeft: "auto",
   },
   roundButton: {
     borderWidth: 1,
