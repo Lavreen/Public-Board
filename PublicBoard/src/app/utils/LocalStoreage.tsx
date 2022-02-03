@@ -17,7 +17,7 @@ export default class LocalStorage {
                         `
                         CREATE TABLE IF NOT EXISTS friends(
                             pubKey      TEXT NOT NULL PRIMARY KEY,
-                            nickname        TEXT NOT NULL,
+                            nickname    TEXT NOT NULL,
                             id          INTEGER
                         );
                         `
@@ -29,7 +29,6 @@ export default class LocalStorage {
                             timestamp   TEXT,
                             dest        TEXT,
                             source      TEXT,
-                            self        INTEGER,
                             message     TEXT,
                             FOREIGN KEY(source) REFERENCES friends(pubkey)
                         );
@@ -68,12 +67,12 @@ export default class LocalStorage {
 
     }
 
-    async saveMessage(id: number, timestamp: string, dest: string, source: string, self: boolean, message: string) {
+    async saveMessage(id: number, timestamp: string, dest: string, source: string, message: string) {
         await this._db?.transaction(
             async (tx) => {
                 await tx.executeSql(
-                    'INSERT INTO messages (id, timestamp, dest, source, self, message) VALUES (?,?,?,?,?,?);',
-                    [id, timestamp, dest, source, self, message]
+                    'INSERT INTO messages (id, timestamp, dest, source, message) VALUES (?,?,?,?,?);',
+                    [id, timestamp, dest, source, message]
                 );
             }
         )
@@ -156,14 +155,15 @@ export default class LocalStorage {
        )
    }
 
-    getMessages(dest: string | null) {
+    getMessages(pubkey: string | null) {
         return new Promise<Array<Message>>((resolve, reject) => {
             this._db?.transaction((tx) => {
-                if (dest == null) {
+                if (pubkey == null) {
                     tx.executeSql(
                         `
-                        SELECT messages.id, timestamp, nickname, self, message 
+                        SELECT messages.id, timestamp, nickname, message 
                         FROM messages INNER JOIN friends ON messages.source=friends.pubkey
+                        WHERE dest = 'board'
                         ORDER BY messages.id;
                         `,
                         [],
@@ -178,8 +178,7 @@ export default class LocalStorage {
                                     timestamp: item.timestamp,
                                     dest: 'board',
                                     source: item.nickname,
-                                    message: item.message,
-                                    self: item.self
+                                    message: item.message
                                 });
                             }
                             resolve(messages)
@@ -192,24 +191,23 @@ export default class LocalStorage {
                 } else {
                     tx.executeSql(
                         `
-                        SELECT messages.id, timestamp, nickname, self, message 
-                        FROM messages INNER JOIN friends ON messages.source=friends.pubkey
-                        WHERE dest=? ORDER BY messages.id;
+                        SELECT messages.id, timestamp, nickname, message 
+                        FROM messages INNER JOIN friends ON messages.source = friends.pubkey
+                        WHERE messages.dest = 'private' AND messages.source = ?
+                        ORDER BY messages.id;
                         `,
-                        [dest],
+                        [pubkey],
                         (tx, results) => {
                             let messages: Array<Message> = [];
                             for (let i = 0; i < results.rows.length; i++) {
                                 let item = results.rows.item(i)
-                                //todo add user to Message type to distinct user messages
                                 messages.push({
                                     id: item.id,
                                     data: null,
                                     timestamp: item.timestamp,
                                     source: item.nickname,
-                                    dest: dest,
-                                    message: item.message,
-                                    self: item.self
+                                    dest: 'private',
+                                    message: item.message
                                 });
                             }
                             resolve(messages)

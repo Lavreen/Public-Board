@@ -26,7 +26,7 @@ const ExportScreen: FC = () => {
                         value={publicKey + ';' + privateKey}
                     />
                 </View>
-                <Button mode="contained" style={styles.margin} onPress={() => Clipboard.setString(privateKey)}>
+                <Button mode="contained" style={styles.margin} onPress={() => Clipboard.setString(publicKey + ';' + privateKey)}>
                     Copy to clipboard
                 </Button>
             </View>

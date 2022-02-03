@@ -51,7 +51,7 @@ const BoardScreen: FC = () => {
             } else
                 return null;
         } else {
-            if (message.self) {
+            if (message.source == "You") {
                 return (
                     <List.Item
                         title={message.source}

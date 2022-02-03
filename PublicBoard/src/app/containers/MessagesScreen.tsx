@@ -31,7 +31,7 @@ const MessagesScreen: FC = () => {
 	const submitMessage = () => {
 		if (messageText == "") return;
 
-		dispatch(sendMessage({ text: messageText, destKeys: [pubkey], dest: pubkey }))
+		dispatch(sendMessage({ text: messageText, destKeys: [pubkey], dest: 'private' }))
 		setSend(true)
 	}
 
@@ -44,7 +44,7 @@ const MessagesScreen: FC = () => {
 		if (message.message == null) {
 			return null;
 		} else {
-			if (message.self) {
+			if (message.source == "You") {
 				return (
 					<View>
 						<Divider />

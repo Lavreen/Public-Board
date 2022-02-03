@@ -11,7 +11,6 @@ export type Message = {
     dest: string | null,
     source: string | null
     message: string | null
-    self: boolean
 }
 
 export type MessagesState = {
@@ -44,7 +43,6 @@ export const loadStoredMessages = createAsyncThunk<
     'messages/loadStoredMessages',
     async (arg, thunkApi) => {
         let messages: Array<Message> = []
-        let id = 0;
         let database_key = thunkApi.getState().security.database
         if (database_key != null) {
             let database = await LocalStorage.getStorage(database_key)
@@ -79,7 +77,7 @@ export const sendMessage = createAsyncThunk<
             }
             if (id != -1) {
                 let database = await LocalStorage.getStorage(database_key)
-                await database.saveMessage(id, "", message.dest, "self", true, message.text)
+                await database.saveMessage(id, "", message.dest, "self", message.text)
             }
         }
         thunkApi.dispatch(setSendState(false))
@@ -134,9 +132,9 @@ export const fetchMessages = createAsyncThunk<
                         if (source == null) source = "unknown"
                         //todo validate message (check if signed correctly)
                         //if not set source to unknown
-                        if (decryptedMsg.dest != 'board' && decryptedMsg.dest != undefined)
-                            decryptedMsg.dest = source
-                        await database.saveMessage(decryptedMsg.id, "", decryptedMsg.dest, source, false, decryptedMsg.message)
+                        if (decryptedMsg.dest != undefined)
+                            decryptedMsg.dest = 'board'
+                        await database.saveMessage(decryptedMsg.id, "", decryptedMsg.dest, source, decryptedMsg.message)
                         for (let friend of friends) {
                             if (friend.pubKey == decryptedMsg.source) {
                                 decryptedMsg.source = friend.nickname
@@ -166,7 +164,7 @@ export const MessageStoreSlice = createSlice({
                 action.payload.messages.forEach((message) => {
                     if (message.dest == 'board' || message.dest == undefined)
                         state.boardMessages.push(message);
-                    else if (message.dest == state.currentPrivate)
+                    else if (message.source == state.currentPrivate)
                         state.privateConversation.push(message);
                 });
                 if (action.payload.maxid > state.id)
@@ -203,8 +201,7 @@ export const MessageStoreSlice = createSlice({
                             message: action.meta.arg.text,
                             timestamp: null,
                             dest: 'board',
-                            source: 'You',
-                            self: true
+                            source: 'You'
                         });
                     else {
                         state.privateConversation.push({
@@ -213,8 +210,7 @@ export const MessageStoreSlice = createSlice({
                             message: action.meta.arg.text,
                             timestamp: null,
                             dest: action.meta.arg.dest,
-                            source: 'You',
-                            self: true
+                            source: 'You'
                         });
                     }
                     state.id = action.payload
