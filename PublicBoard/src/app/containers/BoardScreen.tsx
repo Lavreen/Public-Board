@@ -1,9 +1,9 @@
-import React, { useState, FC } from 'react';
+import React, { useState, FC, useEffect } from 'react';
 import { FlatList, KeyboardAvoidingView, StyleSheet } from 'react-native';
 
 import { RootState } from '../redux/Store';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchMessages, Message, sendMessage } from '../redux/MessagesReducer';
+import { fetchMessages, loadStoredMessages, Message, sendMessage } from '../redux/MessagesReducer';
 import { TextInput, Provider as PaperProvider, Appbar, List, ActivityIndicator } from 'react-native-paper';
 import { theme } from '../assets/paperTheme';
 
@@ -13,11 +13,15 @@ const BoardScreen: FC = () => {
     const [send, setSend] = useState<boolean>(false);
     const [showUndecrypted, setShowUndecrypted] = useState<boolean>(false);
 
-    const messages = useSelector((state: RootState) => state.message.boardMessages);
+    const messages = useSelector((state: RootState) => state.message.messages);
     const friends = useSelector((state: RootState) => state.friends.Friends);
     const loading = useSelector((state: RootState) => state.message.fetchActive);
     const inputLocked = useSelector((state: RootState) => state.message.sendActive);
     const dispatch = useDispatch();
+
+    useEffect(() => {
+		dispatch(loadStoredMessages('board'))
+	}, [])
 
     const submitMessage = () => {
         if (messageText == "") return;

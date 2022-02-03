@@ -14,18 +14,16 @@ export type Message = {
 }
 
 export type MessagesState = {
-    boardMessages: Array<Message>,
-    privateConversation: Array<Message>,
-    currentPrivate: string,
+    messages: Array<Message>,
+    currentDest: string,
     id: number,
     fetchActive: boolean,
     sendActive: boolean
 }
 
 const initialState: MessagesState = {
-    boardMessages: [],
-    privateConversation: [],
-    currentPrivate: "",
+    messages: [],
+    currentDest: "",
     id: 0,
     fetchActive: false,
     sendActive: false
@@ -37,19 +35,16 @@ export const setSendState = createAction<boolean>('setSendState')
 
 export const loadStoredMessages = createAsyncThunk<
     Array<Message>,
-    void | string,
+    string,
     { state: RootState }
 >(
     'messages/loadStoredMessages',
-    async (arg, thunkApi) => {
+    async (dest, thunkApi) => {
         let messages: Array<Message> = []
         let database_key = thunkApi.getState().security.database
         if (database_key != null) {
             let database = await LocalStorage.getStorage(database_key)
-            if (arg)
-                messages = await database.getMessages(arg);
-            else
-                messages = await database.getMessages(null);
+            messages = await database.getMessages(dest);
         }
         return messages
     }
@@ -69,10 +64,13 @@ export const sendMessage = createAsyncThunk<
         let id = -1;
 
         let database_key = thunkApi.getState().security.database
-        if (database_key != null) {
+        if (database_key != null && keys != null) {
+            let senddest = message.dest;
+            if (senddest != "board")
+                senddest = keys.public
 
             for (let destKey of message.destKeys) {
-                let encryptedMessage = await generateEncryptedMessage(destKey, keys, message.text, message.dest);
+                let encryptedMessage = await generateEncryptedMessage(destKey, keys, message.text, senddest);
                 id = await postMessage(encryptedMessage);
             }
             if (id != -1) {
@@ -132,8 +130,6 @@ export const fetchMessages = createAsyncThunk<
                         if (source == null) source = "unknown"
                         //todo validate message (check if signed correctly)
                         //if not set source to unknown
-                        if (decryptedMsg.dest != undefined)
-                            decryptedMsg.dest = 'board'
                         await database.saveMessage(decryptedMsg.id, "", decryptedMsg.dest, source, decryptedMsg.message)
                         for (let friend of friends) {
                             if (friend.pubKey == decryptedMsg.source) {
@@ -162,30 +158,29 @@ export const MessageStoreSlice = createSlice({
         builder
             .addCase(fetchMessages.fulfilled, (state, action) => {
                 action.payload.messages.forEach((message) => {
-                    if (message.dest == 'board' || message.dest == undefined)
-                        state.boardMessages.push(message);
-                    else if (message.source == state.currentPrivate)
-                        state.privateConversation.push(message);
+                    if(message.dest == state.currentDest)
+                        state.messages.push(message)
                 });
                 if (action.payload.maxid > state.id)
                     state.id = action.payload.maxid;
 
             })
             .addCase(deleteMessages.fulfilled, (state, action) => {
-                state.boardMessages = state.boardMessages.filter((msg) => {
-                    action.meta.arg.some((id) => { msg.id == id })
-                })
+                // state.boardMessages = state.boardMessages.filter((msg) => {
+                //     action.meta.arg.some((id) => { msg.id == id })
+                // })
+            })
+            .addCase(loadStoredMessages.pending, (state, action) => {
+                // state.messages = []
+                // state.currentDest = action.meta.arg??'board'
             })
             .addCase(loadStoredMessages.fulfilled, (state, action) => {
-                if (action.meta.arg) {
-                    state.privateConversation = []
-                    state.currentPrivate = action.meta.arg
-                }
+                state.messages = []
+                state.currentDest = action.meta.arg??'board'
+                
                 action.payload.forEach((message) => {
-                    if (action.meta.arg)
-                        state.privateConversation.push(message)
-                    else
-                        state.boardMessages.push(message)
+                    if(message.dest == state.currentDest)
+                        state.messages.push(message)
                     if (+message.id > state.id)
                         state.id = (+message.id)
                 });
@@ -194,32 +189,20 @@ export const MessageStoreSlice = createSlice({
             .addCase(sendMessage.fulfilled, (state, action) => {
                 console.log("fullfiled ", action.payload)
                 if (action.payload != -1) {
-                    if (action.meta.arg.dest == 'board')
-                        state.boardMessages.push({
-                            id: action.payload,
-                            data: null,
-                            message: action.meta.arg.text,
-                            timestamp: null,
-                            dest: 'board',
-                            source: 'You'
-                        });
-                    else {
-                        state.privateConversation.push({
+                    if (action.meta.arg.dest == state.currentDest){
+                        state.messages.push({
                             id: action.payload,
                             data: null,
                             message: action.meta.arg.text,
                             timestamp: null,
                             dest: action.meta.arg.dest,
                             source: 'You'
-                        });
+                        })
                     }
                     state.id = action.payload
                 }
             })
             .addCase(resetMessages, (state, action) => {
-                state.boardMessages = [];
-                state.privateConversation = [];
-                state.currentPrivate = "";
                 state.id = 0;
                 state.fetchActive = false;
                 state.sendActive = false;

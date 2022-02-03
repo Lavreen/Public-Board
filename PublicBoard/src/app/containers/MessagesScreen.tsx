@@ -19,7 +19,7 @@ const MessagesScreen: FC = () => {
 	const [messageText, setMessageText] = useState<string>("")
 	const [send, setSend] = useState<boolean>(false);
 
-	const messages = useSelector((state: RootState) => state.message.privateConversation);
+	const messages = useSelector((state: RootState) => state.message.messages);
 	const loading = useSelector((state: RootState) => state.message.fetchActive);
 	const inputLocked = useSelector((state: RootState) => state.message.sendActive);
 

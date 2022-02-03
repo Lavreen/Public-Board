@@ -93,50 +93,50 @@ export default class LocalStorage {
                             reject(error)
                         }
                     )
-                }   
+                }
             )
-            
+
         })
     }
-    
+
 
     async saveFriend(pubKey: string, name: string) {
         return new Promise<number>(async (resolve, reject) => {
-         let lastId: number
-         await this._db?.transaction(
-            async (tx) => {
-                
-                tx.executeSql(
-                    'SELECT id FROM friends ORDER BY id DESC LIMIT 1;',
-                    [],
-                    (tx, results) => {
-                        lastId = results.rows.item(0).id+1
-                        tx.executeSql(
-                            'INSERT INTO friends (id, pubKey, nickname) VALUES (?, ?,?);',
-                            [lastId, pubKey, name],
-                        );
-                        resolve(lastId)
-                    },
-                    (error) => {
-                        console.log("Database id select error", error);
-                        reject(error)
-                    }
-                ) 
-            }
-        )
+            let lastId: number
+            await this._db?.transaction(
+                async (tx) => {
+
+                    tx.executeSql(
+                        'SELECT id FROM friends ORDER BY id DESC LIMIT 1;',
+                        [],
+                        (tx, results) => {
+                            lastId = results.rows.item(0).id + 1
+                            tx.executeSql(
+                                'INSERT INTO friends (id, pubKey, nickname) VALUES (?, ?,?);',
+                                [lastId, pubKey, name],
+                            );
+                            resolve(lastId)
+                        },
+                        (error) => {
+                            console.log("Database id select error", error);
+                            reject(error)
+                        }
+                    )
+                }
+            )
         })
     }
 
     async deleteFriends(friendsToDel: Array<number>) {
-         await this._db?.transaction(
+        await this._db?.transaction(
             async (tx) => {
-                
+
                 friendsToDel.forEach(
                     (id) => {
                         tx.executeSql(
                             'DELETE FROM friends WHERE id = ?;',
                             [id],
-                        ); 
+                        );
                     }
                 )
             }
@@ -145,79 +145,47 @@ export default class LocalStorage {
 
     async editFriend(friend: Friend) {
         await this._db?.transaction(
-           async (tx) => {
-               
-               tx.executeSql(
-                   'UPDATE friends SET nickname = ?, pubKey = ? WHERE id = ?;',
-                   [friend.nickname, friend.pubKey, friend.id],
-               ); 
-           }
-       )
-   }
+            async (tx) => {
 
-    getMessages(pubkey: string | null) {
+                tx.executeSql(
+                    'UPDATE friends SET nickname = ?, pubKey = ? WHERE id = ?;',
+                    [friend.nickname, friend.pubKey, friend.id],
+                );
+            }
+        )
+    }
+
+    getMessages(dest: string) {
         return new Promise<Array<Message>>((resolve, reject) => {
             this._db?.transaction((tx) => {
-                if (pubkey == null) {
-                    tx.executeSql(
-                        `
-                        SELECT messages.id, timestamp, nickname, message 
-                        FROM messages INNER JOIN friends ON messages.source=friends.pubkey
-                        WHERE dest = 'board'
-                        ORDER BY messages.id;
-                        `,
-                        [],
-                        (tx, results) => {
-                            let messages: Array<Message> = [];
-                            for (let i = 0; i < results.rows.length; i++) {
-                                let item = results.rows.item(i)
-                                console.log(item)
-                                messages.push({
-                                    id: item.id,
-                                    data: null,
-                                    timestamp: item.timestamp,
-                                    dest: 'board',
-                                    source: item.nickname,
-                                    message: item.message
-                                });
-                            }
-                            resolve(messages)
-                        },
-                        (error) => {
-                            console.log("Database load error", error);
-                            reject(error)
-                        }
-                    );
-                } else {
-                    tx.executeSql(
-                        `
+                tx.executeSql(
+                    `
                         SELECT messages.id, timestamp, nickname, message 
                         FROM messages INNER JOIN friends ON messages.source = friends.pubkey
                         WHERE messages.dest = ?
                         ORDER BY messages.id;
                         `,
-                        [pubkey],
-                        (tx, results) => {
-                            let messages: Array<Message> = [];
-                            for (let i = 0; i < results.rows.length; i++) {
-                                let item = results.rows.item(i)
-                                messages.push({
-                                    id: item.id,
-                                    data: null,
-                                    timestamp: item.timestamp,
-                                    source: item.nickname,
-                                    dest: pubkey,
-                                    message: item.message
-                                });
-                            }
-                            resolve(messages)
-                        },
-                        (error) => {
-                            console.log("Database load error");
-                            reject(error)
+                    [dest],
+                    (tx, results) => {
+                        let messages: Array<Message> = [];
+                        for (let i = 0; i < results.rows.length; i++) {
+                            let item = results.rows.item(i)
+                            messages.push({
+                                id: item.id,
+                                data: null,
+                                timestamp: item.timestamp,
+                                source: item.nickname,
+                                dest: dest,
+                                message: item.message
+                            });
                         }
-                    );
-                }
+                        resolve(messages)
+                    },
+                    (error) => {
+                        console.log("Database load error");
+                        reject(error)
+                    }
+                );
             }
             )
         });
