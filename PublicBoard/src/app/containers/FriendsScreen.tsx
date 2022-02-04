@@ -76,7 +76,7 @@ const FriendsScreen: FC = () => {
               <FriendItem
                 friend={{ id: item.id, nickname: item.nickname, pubKey: item.pubKey }}
                 selectFriend={manageSelected}
-                navigationFunc={() => {navigation.navigate("AddFriend", {details: true, friend: item})} }
+                navigationFunc={() => {navigation.navigate("AddFriend" as never, {details: true, friend: item} as never)} }
               />
             )
           } else {

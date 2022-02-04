@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { Image, KeyboardAvoidingView } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { Image, KeyboardAvoidingView, View } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { styles, theme } from '../assets/paperTheme';
 import { TextInput, Button, Provider as PaperProvider, Title, Portal, Modal } from 'react-native-paper';
 import { createNewKeys } from '../redux/SecurityReducer';
 import { ScrollView } from 'react-native-gesture-handler';
 import QRCodeScanner from 'react-native-qrcode-scanner';
+import { validateKeyPair } from '../utils/Crypto';
 
 
 export default function CreateUserScreeen(): JSX.Element | null {
@@ -13,6 +14,12 @@ export default function CreateUserScreeen(): JSX.Element | null {
     const [password, setPassword] = useState<string>('');
     const [importedKeys, setImportedKeys] = useState<string>('');
     const [importModal, setImportModal] = useState<boolean>(false);
+    const [readError, setReadError] = useState<boolean>(false);
+
+    const setImported = useCallback((data) => {
+        setImportedKeys(data)
+        setImportModal(false)
+    }, [])
 
     return (
         <PaperProvider theme={theme}>
@@ -38,20 +45,30 @@ export default function CreateUserScreeen(): JSX.Element | null {
                 }}>
                     Create Account
                 </Button>
-                <Button style={styles.margin} mode="contained" onPress={() => setImportModal(true)}>
+                <Button style={styles.margin} mode="contained" onPress={() => {
+                    setReadError(false)
+                    setImportModal(true)
+                }}>
                     Import Private Key
                 </Button>
+                {importedKeys != '' &&
+                    <Title style={styles.title} > Private key imported! </Title>
+                }
+                {readError &&
+                    <Title style={styles.title}> Read Error </Title>
+                }
             </ScrollView>
             <Portal>
                 <Modal contentContainerStyle={styles.fullscreenModal} visible={importModal} onDismiss={() => { setImportModal(false) }}>
                     <QRCodeScanner
-                        onRead={(e) => {
-                            //todo validate
-                            setImportedKeys(e.data)
-                            setImportModal(false)
+                        onRead={async (event) => {
+                            if (await validateKeyPair(event.data))
+                                setImported(event.data)
+                            else {
+                                setReadError(true)
+                                setImported('')
+                            }
                         }}
-                        // flashMode={RNCamera.Constants.FlashMode.off}
-                        // ratio={"4:3"}
                         reactivate={true}
                     />
                 </Modal>

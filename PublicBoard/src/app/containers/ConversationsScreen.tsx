@@ -1,4 +1,4 @@
-import React, { FC, useCallback, useState } from 'react';
+import React, { FC, useCallback, useEffect, useState } from 'react';
 import { FlatList, } from 'react-native';
 
 import { Appbar, IconButton } from 'react-native-paper';
@@ -16,10 +16,13 @@ const ConversationsScreen: FC = () => {
     const navigation = useNavigation();
     const dispatch = useDispatch();
     const friends = useSelector((state: RootState) => state.friends.Friends)
-    dispatch(lastMessages(friends))
     const lastMsgs =  useSelector((state: RootState) => state.message.lastMsgs)
     const [selectionMode, setSelectionMode] = useState<boolean>()
     const [selectedFriends] = useState<Array<number>>([])
+
+    useEffect(() => {
+        dispatch(lastMessages(friends))
+	}, [])
     
     const manageSelected = useCallback( 
         (id: number): boolean  => {
