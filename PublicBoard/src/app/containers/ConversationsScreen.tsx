@@ -1,34 +1,48 @@
-import React, { FC } from 'react';
-import { View, FlatList, } from 'react-native';
+import React, { FC, useCallback, useState } from 'react';
+import { FlatList, } from 'react-native';
 
-import { List, Avatar, Appbar } from 'react-native-paper';
+import { Appbar, IconButton } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
 import { RootState } from '../redux/Store';
-import { fetchMessages } from '../redux/MessagesReducer';
-import { Friend } from '../redux/FriendsReducer';
+import { deleteMsgsForFriend, fetchMessages, LastMessage, lastMessages } from '../redux/MessagesReducer';
+
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { FriendItem } from "../containers/FriendItem"
+
+
 
 const ConversationsScreen: FC = () => {
     const navigation = useNavigation();
     const dispatch = useDispatch();
     const friends = useSelector((state: RootState) => state.friends.Friends)
-    const _render_item = (friend: Friend) => {
-        return (
-            <List.Item
-                title={friend.nickname}
-                description={"todo last message"}
-                left={() =>
-                    <Avatar.Text size={60} label={friend.nickname[0]} />
-                }
-                onPress={() => navigation.navigate(
-                    'Messages' as never,
-                    { nickname: friend.nickname, pubkey: friend.pubKey } as never
-                )}
-            />
-        );
-    }
+    dispatch(lastMessages(friends))
+    const lastMsgs =  useSelector((state: RootState) => state.message.lastMsgs)
+    const [selectionMode, setSelectionMode] = useState<boolean>()
+    const [selectedFriends] = useState<Array<number>>([])
+    
+    const manageSelected = useCallback( 
+        (id: number): boolean  => {
+
+            let idx = selectedFriends.indexOf(id)
+
+            if(idx == -1){
+            selectedFriends.push(id)
+            setSelectionMode(true)
+            return true
+            } else {
+            selectedFriends.splice(idx, 1)
+            if(selectedFriends.length == 0)
+                setSelectionMode(false)
+            
+            return false
+        }
+        }, []
+    )  
+    
     return (
-        <View>
+        
+        <SafeAreaView>
             <Appbar.Header>
                 <Appbar.Content
                     title="Conversations"
@@ -38,11 +52,39 @@ const ConversationsScreen: FC = () => {
                     onPress={() => dispatch(fetchMessages())}
                 />
             </Appbar.Header>
+            <IconButton
+                icon="delete" size={35}
+                style={{
+                    marginRight: 2,
+                    marginLeft: "auto",
+                    display: selectionMode ? "flex" : "none"
+                }}
+                onPress={() => {
+                    setSelectionMode(false);
+                    dispatch(deleteMsgsForFriend(selectedFriends));
+                }}
+            />
             <FlatList
                 data={friends}
-                renderItem={({ item }) => _render_item(item)}
+                renderItem={({ item }) => {
+                    return (
+                      <FriendItem
+                        friend={{ 
+                            id: item.id, 
+                            nickname: item.nickname, 
+                            pubKey: lastMsgs[friends.indexOf(item)]?.message || ""
+                        }}
+                        selectFriend={manageSelected}
+                        navigationFunc={() => {navigation.navigate(
+                            'Messages' as never,
+                            { nickname: item.nickname, pubkey: item.pubKey } as never
+                        )} }
+                      />
+                    )
+                  }
+                }
             />
-        </View>
+        </SafeAreaView>
     );
 }
 export default ConversationsScreen

@@ -1,6 +1,6 @@
 import SQLite from 'react-native-sqlite-storage'
 import { Friend } from '../redux/FriendsReducer';
-import { Message } from "../redux/MessagesReducer";
+import { Message, LastMessage} from "../redux/MessagesReducer";
 
 export default class LocalStorage {
 
@@ -212,5 +212,73 @@ export default class LocalStorage {
             }
             )
         });
+    }
+
+    getLastMessages(friends: Friend[]) {
+        
+        return new  Promise<Array<LastMessage>>((resolve, reject) => {
+                this._db?.transaction((tx) => {
+                let lastMessage: LastMessage
+                let lastMessages: LastMessage[] = []
+                friends.forEach(
+                    (friend) => {
+                         tx.executeSql(
+                            'SELECT message, source FROM messages WHERE source = ? OR dest = ? ORDER BY id DESC LIMIT 1;',
+                            [friend.pubKey, friend.pubKey],
+                            (tx, results) => {
+                                if(results.rows.length > 0){
+                                    lastMessage = {
+                                        message: results.rows.item(0).message,
+                                        source: results.rows.item(0).source
+                                    }
+                                    lastMessages.push(lastMessage)
+                                    resolve(lastMessages)
+                                } else {
+                                    lastMessage = {
+                                        message: "",
+                                        source: "",
+                                    }
+                                    lastMessages.push(lastMessage)
+                                    resolve(lastMessages)
+                                }
+                            },
+                            (error) => {
+                                console.log("Database load error");
+                                reject(error)
+                            }
+                        );
+                    }
+                )  
+            }
+            )
+            
+        });
+    }
+
+    async deleteMsgsForFriend(friendsIds: Array<number>) {
+        await this._db?.transaction(
+            async (tx) => {
+
+                friendsIds.forEach(
+                    (id) => {
+
+                        tx.executeSql(
+                            'SELECT pubKey FROM friends WHERE id = ?;',
+                            [id],
+                            (tx, results) => {
+                                let pubKey = results.rows.item(0).pubKey || null
+                                if(pubKey != null){
+                                    tx.executeSql(
+                                        'DELETE FROM messages WHERE source = ? OR dest = ?;',
+                                        [pubKey, pubKey],
+                                    );
+                                }
+                            }
+                        );
+                        
+                    }
+                )
+            }
+        )
     }
 }

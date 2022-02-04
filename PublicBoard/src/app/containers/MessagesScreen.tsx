@@ -1,11 +1,11 @@
 import React, { useState, FC, useEffect } from 'react';
-import { FlatList, KeyboardAvoidingView, StyleSheet, View } from 'react-native';
+import { FlatList, KeyboardAvoidingView, SafeAreaView, StyleSheet, View } from 'react-native';
 
 import { RootState } from '../redux/Store';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchMessages, loadStoredMessages, Message, sendMessage } from '../redux/MessagesReducer';
 import { TextInput, Provider as PaperProvider, Appbar, List, ActivityIndicator, Divider } from 'react-native-paper';
-import { theme } from '../assets/paperTheme';
+import { styles, theme } from '../assets/paperTheme';
 import { useRoute } from '@react-navigation/native';
 
 
@@ -98,7 +98,7 @@ const MessagesScreen: FC = () => {
 	}
 
 	return (
-		<PaperProvider theme={theme}>
+		<SafeAreaView style={styles.container}>
 			{pubkey != "board" &&
 				(<Appbar.Header>
 					<Appbar.Content
@@ -153,13 +153,16 @@ const MessagesScreen: FC = () => {
 					}
 				/>
 			</KeyboardAvoidingView>
-		</PaperProvider>
+		</SafeAreaView>
 	);
 }
 
 export default MessagesScreen
 
 const textStylesheet = StyleSheet.create({
+	container: {
+		flex: 1,
+	},
 	userTitle: {
 		color: 'green',
 		alignSelf: 'flex-end',

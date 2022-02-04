@@ -1,8 +1,9 @@
-import { createAction, createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { createAction, createAsyncThunk, createSlice, unwrapResult } from '@reduxjs/toolkit';
 import { getMessageGtId, postMessage } from '../utils/Api';
 import { generateEncryptedMessage, decryptMessage } from '../utils/Crypto';
 import { RootState } from '../redux/Store';
 import LocalStorage from '../utils/LocalStoreage';
+import { Friend } from './FriendsReducer';
 
 export type Message = {
     id: number,
@@ -13,8 +14,11 @@ export type Message = {
     message: string | null
 }
 
+export type LastMessage = {message: string, source: string}
+
 export type MessagesState = {
     messages: Array<Message>,
+    lastMsgs: Array<LastMessage>,
     currentDest: string,
     id: number,
     fetchActive: boolean,
@@ -23,11 +27,14 @@ export type MessagesState = {
 
 const initialState: MessagesState = {
     messages: [],
+    lastMsgs: [],
     currentDest: "",
     id: 0,
     fetchActive: false,
     sendActive: false
 }
+
+
 
 export const resetMessages = createAction<void>('resetMessages')
 export const setFetchState = createAction<boolean>('setFetchState')
@@ -83,10 +90,39 @@ export const sendMessage = createAsyncThunk<
     }
 );
 
-export const deleteMessages = createAsyncThunk(
-    'messages/deleteMessages',
-    async (ids: Array<number>) => {
-        //todo SQL Lite remove
+
+
+export const lastMessages = createAsyncThunk<
+    Array<LastMessage>,
+    Array<Friend>,
+    { state: RootState }
+>(
+    'messages/lastMessages',
+    async (friends, thunkApi) => {
+
+        let lastMessages: Array<LastMessage> = []
+        let database_key = thunkApi.getState().security.database
+        if (database_key != null) {
+            let database = await LocalStorage.getStorage(database_key);
+            lastMessages = await database.getLastMessages(friends)
+        }
+        return lastMessages
+    }
+
+)
+
+export const deleteMsgsForFriend = createAsyncThunk<
+void,
+Array<number>,
+{ state: RootState }
+>(
+    'messages/deleteMsgsForFriend',
+    async (friendsPubKeys, thunkApi) => {
+        let database_key = thunkApi.getState().security.database
+        if (database_key != null) {
+            let database = await LocalStorage.getStorage(database_key);
+            await database.deleteMsgsForFriend(friendsPubKeys)
+        }
     }
 );
 
@@ -169,7 +205,7 @@ export const MessageStoreSlice = createSlice({
                 //     state.id = action.payload.maxid;
 
             })
-            .addCase(deleteMessages.fulfilled, (state, action) => {
+            .addCase(deleteMsgsForFriend.fulfilled, (state, action) => {
                 // state.boardMessages = state.boardMessages.filter((msg) => {
                 //     action.meta.arg.some((id) => { msg.id == id })
                 // })
@@ -219,6 +255,12 @@ export const MessageStoreSlice = createSlice({
             .addCase(setSendState, (state, action) => {
                 state.sendActive = action.payload;
             })
+            .addCase(lastMessages.fulfilled, (state, action) => {
+                action.payload.forEach(
+                    (msg) => {state.lastMsgs.push(msg)}
+                )
+            })
+
     }
 });
 

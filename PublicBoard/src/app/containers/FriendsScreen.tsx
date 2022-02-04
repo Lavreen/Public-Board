@@ -1,18 +1,16 @@
-import React, { FC, useCallback, useEffect, useState } from 'react';
+import React, { FC, useCallback, useState } from 'react';
 import {
   FlatList,
   SafeAreaView,
   StyleSheet,
-  Text as RNText,
-  TouchableOpacity,
-  View
 } from 'react-native';
 
 import { useNavigation } from '@react-navigation/native';
 import { deleteFriends, Friend } from "../redux/FriendsReducer"
+import { buttonStyle, FriendItem } from "../containers/FriendItem"
 import { RootState } from '../redux/Store';
 import { useDispatch, useSelector } from 'react-redux';
-import { List, IconButton, Searchbar, Button } from 'react-native-paper';
+import {IconButton, Searchbar } from 'react-native-paper';
 
 export type FriendsNavigationParams = {
   obj: {
@@ -78,7 +76,7 @@ const FriendsScreen: FC = () => {
               <FriendItem
                 friend={{ id: item.id, nickname: item.nickname, pubKey: item.pubKey }}
                 selectFriend={manageSelected}
-                navigation={navigation}
+                navigationFunc={() => {navigation.navigate("AddFriend", {details: true, friend: item})} }
               />
             )
           } else {
@@ -93,7 +91,7 @@ const FriendsScreen: FC = () => {
         icon="plus" size={30}
         style={
           [
-            styles.roundButton,
+            buttonStyle.roundButton,
             {
               position: "relative", marginRight: 20, marginBottom: 20,
               marginLeft: "auto", marginTop: "auto"
@@ -106,92 +104,6 @@ const FriendsScreen: FC = () => {
     </SafeAreaView>
   );
 };
-
-
-
-function getRandomColor(arg: String) {
-
-  let valueToAdd = 0;
-  for (let i = 0; i < arg.length; i++) {
-    valueToAdd += arg.charCodeAt(i);
-  }
-
-  return 'rgba(' + String((240 + valueToAdd) % 256) + ','
-    + String((230 + valueToAdd) % 256) + ','
-    + String((140 + valueToAdd) % 256) + ',' + '0.6' + ')';
-}
-
-const IconWithName: FC<{ 
-  friendId: number
-  nickname: String,
-  isSelected: boolean,
-  setIsSelected: React.Dispatch<React.SetStateAction<boolean>>
-  selectFriend: (id: number) => boolean 
-}> = (props) => {
-  
-  const myFunc = function() : void {
-    props.setIsSelected(props.selectFriend(props.friendId))
-  }
-
-  return (
-    <TouchableOpacity
-      style={[
-        styles.roundButton, 
-        { 
-          backgroundColor: props.isSelected == false 
-            ? getRandomColor(props.nickname) : "rgb(54,35,113)"
-        }
-      ]}
-      onPress={myFunc}
-    >
-    {props.isSelected == false ?
-      <RNText style={{ fontSize: 30, color: "white" }}>{props.nickname.charAt(0)}</RNText>
-      : <IconButton icon="check" size={30} color="white"/>}
-    </TouchableOpacity>
-  )
-}
-
-
-const FriendItem: FC<{ 
-  friend: Friend, 
-  selectFriend: (id: number) => boolean 
-  navigation: any
-}> = (props) => {
-
-  const [isSelected, setIsSelected] = useState<boolean>(false)
-
-  return (
-    <View style={{
-      paddingHorizontal:5, 
-      paddingVertical:2,
-    }}>
-    <List.Item
-      title={props.friend.nickname}
-      onPress={() => {props.navigation.navigate("AddFriend", {details: true, friend: props.friend}) }}
-      description={props.friend.pubKey}
-      onLongPress={() => {
-          setIsSelected(props.selectFriend(props.friend.id))
-        }
-      }
-      left={() =>
-        <IconWithName 
-          friendId={props.friend.id}
-          nickname={props.friend.nickname.concat(props.friend.pubKey.charAt(0).toLocaleUpperCase())} 
-          isSelected={isSelected}
-          setIsSelected={setIsSelected}
-          selectFriend={props.selectFriend}
-        />
-      }
-      style={{
-        backgroundColor: isSelected==false ? "white" : "rgb(154, 154, 156)", 
-        borderRadius: 10,
-        borderBottomColor: "gray",
-        borderBottomWidth: 0.2
-      }}
-    />
-    </View>
-  )
-}
 
 
 const styles = StyleSheet.create({
@@ -219,17 +131,6 @@ const styles = StyleSheet.create({
     marginRight: 2,
     marginLeft: "auto",
   },
-  roundButton: {
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 60,
-    height: 60,
-    fontWeight: "bold",
-    backgroundColor: '#fff',
-    borderRadius: 100,
-  }
 });
 
 export default FriendsScreen;

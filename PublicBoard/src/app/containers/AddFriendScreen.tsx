@@ -1,5 +1,6 @@
 import React, { FC, useEffect, useState } from 'react';
 import {
+  Dimensions,
   SafeAreaView,
   StyleSheet,
   Text,
@@ -53,7 +54,8 @@ const AddFriendScreen: FC = () => {
   const [enableCamera, setEnableCamera] = useState<boolean>(false)
   const [warningText, setWarningText] = useState<string>("")
   const [editMode, setEditMode] = useState<boolean>(route.params.details == true ? false : true)
-
+  const windowWidth = Dimensions.get('window').width;
+  
   let timeout: NodeJS.Timeout
 
   const validatePubKey = (pubKey: string) :boolean => {
@@ -173,7 +175,7 @@ const AddFriendScreen: FC = () => {
 
       {editMode == true ? 
         <IconButton 
-          icon="qrcode" size={300}
+          icon="qrcode-scan" size={windowWidth/2}
           style={
             {
               display: enableCamera == true ? "none" : "flex",
@@ -185,7 +187,7 @@ const AddFriendScreen: FC = () => {
         : route.params.details == true ? 
         <View style={styles.qrGenerated}>
            <QRCode
-            size={400}
+            size={windowWidth-20}
             value={route.params.friend.pubKey}
           /> 
         </View>
