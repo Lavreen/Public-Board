@@ -1,6 +1,6 @@
 import SQLite from 'react-native-sqlite-storage'
-import { Friend } from '../redux/FriendsReducer';
-import { Message, LastMessage} from "../redux/MessagesReducer";
+import { Friend, FriendWithMsg} from '../redux/FriendsReducer';
+import { Message } from "../redux/MessagesReducer";
 
 export default class LocalStorage {
 
@@ -214,43 +214,61 @@ export default class LocalStorage {
         });
     }
 
-    getLastMessages(friends: Friend[]) {
+    getFriendsWithMsgs() {
         
-        return new  Promise<Array<LastMessage>>((resolve, reject) => {
+        return new  Promise<Array<FriendWithMsg>>((resolve, reject) => {
                 this._db?.transaction((tx) => {
-                let lastMessage: LastMessage
-                let lastMessages: LastMessage[] = []
-                friends.forEach(
-                    (friend) => {
-                         tx.executeSql(
-                            'SELECT message, source FROM messages WHERE source = ? OR dest = ? ORDER BY id DESC LIMIT 1;',
-                            [friend.pubKey, friend.pubKey],
-                            (tx, results) => {
-                                if(results.rows.length > 0){
-                                    lastMessage = {
-                                        message: results.rows.item(0).message,
-                                        source: results.rows.item(0).source
+                
+                
+                tx.executeSql(
+                    'SELECT * FROM friends WHERE id > 2 ORDER BY nickname ASC;',
+                    [],
+                    (tx, results) => {
+
+                        let friends: Array<Friend> = [];
+                        for (let i = 0; i < results.rows.length; i++) {
+                            friends.push(results.rows.item(i));
+                        }
+                        let friendWithMsg: FriendWithMsg 
+                        let friednsWithMsgs: FriendWithMsg[] = []
+                        friends.forEach(
+                            (friend) => {
+                                 tx.executeSql(
+                                    'SELECT message, source FROM messages WHERE source = ? OR dest = ?\
+                                    ORDER BY id DESC LIMIT 1;',
+                                    [friend.pubKey, friend.pubKey],
+                                    (tx, results) => {
+                                        if(results.rows.length > 0){
+                                            friendWithMsg = {
+                                                msg: results.rows.item(0).message,
+                                                friend: friend
+                                            }
+                                            friednsWithMsgs.push(friendWithMsg)
+                                            resolve(friednsWithMsgs)
+                                        } else {
+                                            friendWithMsg = {
+                                                msg: "",
+                                                friend: friend
+                                            }
+                                            friednsWithMsgs.push(friendWithMsg)
+                                            resolve(friednsWithMsgs)
+                                        }
+                                    },
+                                    (error) => {
+                                        console.log("Database load error");
+                                        reject(error)
                                     }
-                                    lastMessages.push(lastMessage)
-                                    resolve(lastMessages)
-                                } else {
-                                    lastMessage = {
-                                        message: "",
-                                        source: "",
-                                    }
-                                    lastMessages.push(lastMessage)
-                                    resolve(lastMessages)
-                                }
-                            },
-                            (error) => {
-                                console.log("Database load error");
-                                reject(error)
+                                );
                             }
-                        );
+                        )  
                     }
-                )  
-            }
-            )
+                )
+            
+
+               
+
+               
+            })
             
         });
     }

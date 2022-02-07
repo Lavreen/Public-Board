@@ -5,24 +5,31 @@ import { Appbar, IconButton } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
 import { RootState } from '../redux/Store';
-import { deleteMsgsForFriend, fetchMessages, LastMessage, lastMessages } from '../redux/MessagesReducer';
+import { deleteMsgsForFriend, fetchMessages} from '../redux/MessagesReducer';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FriendItem } from "../containers/FriendItem"
+import { loadLastMessages } from '../redux/FriendsReducer';
 
 
 
 const ConversationsScreen: FC = () => {
     const navigation = useNavigation();
     const dispatch = useDispatch();
-    const friends = useSelector((state: RootState) => state.friends.Friends)
-    const lastMsgs =  useSelector((state: RootState) => state.message.lastMsgs)
+    const friendsWithMsgs = useSelector((state: RootState) => state.friends.FriendsWithMsgs)
     const [selectionMode, setSelectionMode] = useState<boolean>()
     const [selectedFriends] = useState<Array<number>>([])
 
     useEffect(() => {
-        dispatch(lastMessages(friends))
-	}, [])
+        
+        dispatch(loadLastMessages())
+        const willFocusSubscription = navigation.addListener('focus', () => {
+            dispatch(loadLastMessages())
+        });
+  
+      return willFocusSubscription;
+    }, [navigation]);
+
     
     const manageSelected = useCallback( 
         (id: number): boolean  => {
@@ -68,19 +75,19 @@ const ConversationsScreen: FC = () => {
                 }}
             />
             <FlatList
-                data={friends}
+                data={friendsWithMsgs}
                 renderItem={({ item }) => {
                     return (
                       <FriendItem
                         friend={{ 
-                            id: item.id, 
-                            nickname: item.nickname, 
-                            pubKey: lastMsgs[friends.indexOf(item)]?.message || ""
+                            id: item.friend.id,
+                            nickname: item.friend.nickname,
+                            pubKey: item.msg
                         }}
                         selectFriend={manageSelected}
                         navigationFunc={() => {navigation.navigate(
                             'Messages' as never,
-                            { nickname: item.nickname, pubkey: item.pubKey } as never
+                            { nickname: item.friend.nickname, pubkey: item.friend.pubKey } as never
                         )} }
                       />
                     )

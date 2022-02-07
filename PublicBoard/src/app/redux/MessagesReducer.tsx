@@ -14,11 +14,8 @@ export type Message = {
     message: string | null
 }
 
-export type LastMessage = {message: string, source: string}
-
 export type MessagesState = {
     messages: Array<Message>,
-    lastMsgs: Array<LastMessage>,
     currentDest: string,
     id: number,
     fetchActive: boolean,
@@ -27,14 +24,11 @@ export type MessagesState = {
 
 const initialState: MessagesState = {
     messages: [],
-    lastMsgs: [],
     currentDest: "",
     id: 0,
     fetchActive: false,
     sendActive: false
 }
-
-
 
 export const resetMessages = createAction<void>('resetMessages')
 export const setFetchState = createAction<boolean>('setFetchState')
@@ -90,26 +84,6 @@ export const sendMessage = createAsyncThunk<
     }
 );
 
-
-
-export const lastMessages = createAsyncThunk<
-    Array<LastMessage>,
-    Array<Friend>,
-    { state: RootState }
->(
-    'messages/lastMessages',
-    async (friends, thunkApi) => {
-
-        let lastMessages: Array<LastMessage> = []
-        let database_key = thunkApi.getState().security.database
-        if (database_key != null) {
-            let database = await LocalStorage.getStorage(database_key);
-            lastMessages = await database.getLastMessages(friends)
-        }
-        return lastMessages
-    }
-
-)
 
 export const deleteMsgsForFriend = createAsyncThunk<
 void,
@@ -254,11 +228,6 @@ export const MessageStoreSlice = createSlice({
             })
             .addCase(setSendState, (state, action) => {
                 state.sendActive = action.payload;
-            })
-            .addCase(lastMessages.fulfilled, (state, action) => {
-                action.payload.forEach(
-                    (msg) => {state.lastMsgs.push(msg)}
-                )
             })
 
     }

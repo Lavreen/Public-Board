@@ -9,12 +9,19 @@ type Friend = {
     pubKey: string
 }
 
+export type FriendWithMsg = {
+    friend: Friend
+    msg: string
+}
+
 export type FriendsState = {
     Friends: Array<Friend>
+    FriendsWithMsgs: Array<FriendWithMsg>
 }
 
 const initialState: FriendsState = {
     Friends: [],
+    FriendsWithMsgs: [],
 }
 
 export const resetFriends = createAction<void>('resetFriends')
@@ -37,6 +44,25 @@ export const loadFriends = createAsyncThunk<
     }
 );
 
+
+export const loadLastMessages = createAsyncThunk<
+    Array<FriendWithMsg>,
+    void,
+    { state: RootState }
+>(
+    'messages/loadLastMessages',
+    async (friends, thunkApi) => {
+
+        let friendsWithMsg: Array<FriendWithMsg> = []
+        let database_key = thunkApi.getState().security.database
+        if (database_key != null) {
+            let database = await LocalStorage.getStorage(database_key);
+            friendsWithMsg = await database.getFriendsWithMsgs()
+        }
+        return friendsWithMsg
+    }
+
+)
 
 export const checkPubKey = createAsyncThunk<
 boolean,
@@ -119,6 +145,12 @@ export const FriendsStoreSlice = createSlice({
                     (friend) => state.Friends.push(friend)
                 );
             })
+            .addCase(loadLastMessages.fulfilled, (state, action) => {
+                state.FriendsWithMsgs = []
+                action.payload.forEach(
+                    (friendWithMsg) => state.FriendsWithMsgs.push(friendWithMsg)
+                );
+            })
             .addCase(addFriend.fulfilled, (state, action) => {
                 let id = action.payload
                 if(id != null){
@@ -134,7 +166,7 @@ export const FriendsStoreSlice = createSlice({
                 }  
             })
             .addCase(checkPubKey.fulfilled, (state, action) => {
-            
+
             })
             .addCase(deleteFriends.fulfilled, (state, action) => {
                 action.meta.arg.forEach(
