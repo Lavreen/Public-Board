@@ -216,45 +216,33 @@ export default class LocalStorage {
         return new Promise<Array<FriendWithMsg>>((resolve, reject) => {
             this._db?.transaction((tx) => {
                 tx.executeSql(
-                    'SELECT * FROM friends WHERE id > 2 ORDER BY nickname ASC;',
+                    `SELECT friends2.id, friends2.nickname, friends2.pubKey, message
+                    FROM (SELECT * FROM friends WHERE id > 2 ORDER BY nickname ASC) AS friends2 LEFT JOIN
+                      (SELECT dest, max(id) AS id FROM messages GROUP BY dest) AS tmp
+                      ON friends2.pubkey = tmp.dest
+                    LEFT JOIN messages
+                    ON messages.id = tmp.id`,
                     [],
                     (tx, results) => {
-                        let friends: Array<Friend> = [];
-                        for (let i = 0; i < results.rows.length; i++) {
-                            friends.push(results.rows.item(i));
-                        }
+                        
                         let friendWithMsg: FriendWithMsg
                         let friednsWithMsgs: FriendWithMsg[] = []
-                        friends.forEach(
-                            (friend) => {
-                                tx.executeSql(
-                                    'SELECT message, source FROM messages WHERE source = ? OR dest = ?\
-                                    ORDER BY id DESC LIMIT 1;',
-                                    [friend.pubKey, friend.pubKey],
-                                    (tx, results) => {
-                                        if (results.rows.length > 0) {
-                                            friendWithMsg = {
-                                                msg: results.rows.item(0).message,
-                                                friend: friend
-                                            }
-                                            friednsWithMsgs.push(friendWithMsg)
-                                            resolve(friednsWithMsgs)
-                                        } else {
-                                            friendWithMsg = {
-                                                msg: "",
-                                                friend: friend
-                                            }
-                                            friednsWithMsgs.push(friendWithMsg)
-                                            resolve(friednsWithMsgs)
-                                        }
-                                    },
-                                    (error) => {
-                                        console.log("Database load error");
-                                        reject(error)
-                                    }
-                                );
+                        for (let i = 0; i < results.rows.length; i++) {
+                            friendWithMsg = {
+                                friend: {
+                                    id: results.rows.item(i).id,
+                                    nickname: results.rows.item(i).nickname,
+                                    pubKey: results.rows.item(i).pubKey
+                                },
+                                msg: results.rows.item(i).message || ""
                             }
-                        )
+                            friednsWithMsgs.push(friendWithMsg)
+                        }
+                        resolve(friednsWithMsgs)
+                    },
+                    (error) => {
+                        console.log("Database load error");
+                        reject(error)
                     }
                 )
             })
