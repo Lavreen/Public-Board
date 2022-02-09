@@ -3,7 +3,7 @@ import { getMessageGtId, postMessage } from '../utils/Api';
 import { generateEncryptedMessage, decryptMessage } from '../utils/Crypto';
 import { RootState } from '../redux/Store';
 import LocalStorage from '../utils/LocalStoreage';
-import { Friend } from './FriendsReducer';
+import EncryptedStorage from 'react-native-encrypted-storage';
 
 export type Message = {
     id: number,
@@ -77,6 +77,7 @@ export const sendMessage = createAsyncThunk<
             if (id != -1) {
                 let database = await LocalStorage.getStorage(database_key)
                 await database.saveMessage(id, "", message.dest, "self", message.text)
+                await EncryptedStorage.setItem('PublicBoardMaxId', id.toString())
             }
         }
         thunkApi.dispatch(setSendState(false))
@@ -86,9 +87,9 @@ export const sendMessage = createAsyncThunk<
 
 
 export const deleteMsgsForFriend = createAsyncThunk<
-void,
-Array<number>,
-{ state: RootState }
+    void,
+    Array<number>,
+    { state: RootState }
 >(
     'messages/deleteMsgsForFriend',
     async (friendsPubKeys, thunkApi) => {
@@ -112,14 +113,13 @@ export const fetchMessages = createAsyncThunk<
         thunkApi.dispatch(setFetchState(true))
         let messages: Array<Message> = [];
 
-        let maxid = 0;
+        let maxid = +(await EncryptedStorage.getItem('PublicBoardMaxId') ?? 0);
 
         let database_key = thunkApi.getState().security.database
         if (database_key != null) {
             let database = await LocalStorage.getStorage(database_key)
-            let id = thunkApi.getState().message.id + 1
-            console.log(`Fething messages from ${id}`)
-            const data = await getMessageGtId(id.toString());
+            console.log(`Fething messages from ${maxid + 1}`)
+            const data = await getMessageGtId((maxid + 1).toString());
             console.log(`Fetched ${data.length} messages`)
             let private_key
             if (arg)
@@ -156,6 +156,7 @@ export const fetchMessages = createAsyncThunk<
             }
         }
         thunkApi.dispatch(setFetchState(false))
+        await EncryptedStorage.setItem('PublicBoardMaxId', maxid.toString())
         return { messages: messages, maxid: maxid };
     }
 );
@@ -168,9 +169,9 @@ export const MessageStoreSlice = createSlice({
         builder
             .addCase(fetchMessages.fulfilled, (state, action) => {
                 action.payload.messages.forEach((message) => {
-                    if(message.dest == state.currentDest)
+                    if (message.dest == state.currentDest)
                         state.messages.push(message)
-                    else if(state.currentDest == 'board' && message.dest == null)
+                    else if (state.currentDest == 'board' && message.dest == null)
                         state.messages.push(message)
                     if (+message.id > state.id)
                         state.id = (+message.id)
@@ -190,10 +191,10 @@ export const MessageStoreSlice = createSlice({
             })
             .addCase(loadStoredMessages.fulfilled, (state, action) => {
                 state.messages = []
-                state.currentDest = action.meta.arg??'board'
-                
+                state.currentDest = action.meta.arg ?? 'board'
+
                 action.payload.forEach((message) => {
-                    if(message.dest == state.currentDest)
+                    if (message.dest == state.currentDest)
                         state.messages.push(message)
                     if (+message.id > state.id)
                         state.id = (+message.id)
@@ -203,7 +204,7 @@ export const MessageStoreSlice = createSlice({
             .addCase(sendMessage.fulfilled, (state, action) => {
                 console.log("fullfiled ", action.payload)
                 if (action.payload != -1) {
-                    if (action.meta.arg.dest == state.currentDest){
+                    if (action.meta.arg.dest == state.currentDest) {
                         state.messages.push({
                             id: action.payload,
                             data: null,
@@ -213,9 +214,8 @@ export const MessageStoreSlice = createSlice({
                             source: 'You'
                         })
                     }
-                    if(state.id < action.payload)
-                        
-                    state.id = action.payload
+                    if (state.id < action.payload)
+                        state.id = action.payload
                 }
             })
             .addCase(resetMessages, (state, action) => {

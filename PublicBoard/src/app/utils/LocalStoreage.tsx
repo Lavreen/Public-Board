@@ -1,5 +1,5 @@
 import SQLite from 'react-native-sqlite-storage'
-import { Friend, FriendWithMsg} from '../redux/FriendsReducer';
+import { Friend, FriendWithMsg } from '../redux/FriendsReducer';
 import { Message } from "../redux/MessagesReducer";
 
 export default class LocalStorage {
@@ -105,7 +105,6 @@ export default class LocalStorage {
             let lastId: number
             await this._db?.transaction(
                 async (tx) => {
-
                     tx.executeSql(
                         'SELECT id FROM friends ORDER BY id DESC LIMIT 1;',
                         [],
@@ -130,7 +129,6 @@ export default class LocalStorage {
     async deleteFriends(friendsToDel: Array<number>) {
         await this._db?.transaction(
             async (tx) => {
-
                 friendsToDel.forEach(
                     (id) => {
                         tx.executeSql(
@@ -146,7 +144,6 @@ export default class LocalStorage {
     async editFriend(friend: Friend) {
         await this._db?.transaction(
             async (tx) => {
-
                 tx.executeSql(
                     'UPDATE friends SET nickname = ?, pubKey = ? WHERE id = ?;',
                     [friend.nickname, friend.pubKey, friend.id],
@@ -160,8 +157,8 @@ export default class LocalStorage {
             this._db?.transaction((tx) => {
                 tx.executeSql(
                     `
-                        SELECT messages.id, timestamp, nickname, message 
-                        FROM messages INNER JOIN friends ON messages.source = friends.pubkey
+                        SELECT messages.id, timestamp, nickname, message, source
+                        FROM messages LEFT JOIN friends ON messages.source = friends.pubkey
                         WHERE messages.dest = ?
                         ORDER BY messages.id;
                         `,
@@ -174,7 +171,7 @@ export default class LocalStorage {
                                 id: item.id,
                                 data: null,
                                 timestamp: item.timestamp,
-                                source: item.nickname,
+                                source: item.nickname ?? item.source,
                                 dest: dest,
                                 message: item.message
                             });
@@ -215,30 +212,27 @@ export default class LocalStorage {
     }
 
     getFriendsWithMsgs() {
-        
-        return new  Promise<Array<FriendWithMsg>>((resolve, reject) => {
-                this._db?.transaction((tx) => {
-                
-                
+
+        return new Promise<Array<FriendWithMsg>>((resolve, reject) => {
+            this._db?.transaction((tx) => {
                 tx.executeSql(
                     'SELECT * FROM friends WHERE id > 2 ORDER BY nickname ASC;',
                     [],
                     (tx, results) => {
-
                         let friends: Array<Friend> = [];
                         for (let i = 0; i < results.rows.length; i++) {
                             friends.push(results.rows.item(i));
                         }
-                        let friendWithMsg: FriendWithMsg 
+                        let friendWithMsg: FriendWithMsg
                         let friednsWithMsgs: FriendWithMsg[] = []
                         friends.forEach(
                             (friend) => {
-                                 tx.executeSql(
+                                tx.executeSql(
                                     'SELECT message, source FROM messages WHERE source = ? OR dest = ?\
                                     ORDER BY id DESC LIMIT 1;',
                                     [friend.pubKey, friend.pubKey],
                                     (tx, results) => {
-                                        if(results.rows.length > 0){
+                                        if (results.rows.length > 0) {
                                             friendWithMsg = {
                                                 msg: results.rows.item(0).message,
                                                 friend: friend
@@ -260,32 +254,24 @@ export default class LocalStorage {
                                     }
                                 );
                             }
-                        )  
+                        )
                     }
                 )
-            
-
-               
-
-               
             })
-            
         });
     }
 
     async deleteMsgsForFriend(friendsIds: Array<number>) {
         await this._db?.transaction(
             async (tx) => {
-
                 friendsIds.forEach(
                     (id) => {
-
                         tx.executeSql(
                             'SELECT pubKey FROM friends WHERE id = ?;',
                             [id],
                             (tx, results) => {
                                 let pubKey = results.rows.item(0).pubKey || null
-                                if(pubKey != null){
+                                if (pubKey != null) {
                                     tx.executeSql(
                                         'DELETE FROM messages WHERE source = ? OR dest = ?;',
                                         [pubKey, pubKey],
@@ -293,7 +279,7 @@ export default class LocalStorage {
                                 }
                             }
                         );
-                        
+
                     }
                 )
             }

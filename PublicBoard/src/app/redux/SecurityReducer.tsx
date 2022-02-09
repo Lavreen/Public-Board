@@ -53,13 +53,13 @@ export const createNewKeys = createAsyncThunk<
     'security/createNewKeys',
     async (arg) => {
         let data: any = {}
-        if(arg.keys){
+        if (arg.keys) {
             let splited = arg.keys.split(';')
             data.rsa_keys = {
                 public: splited[0],
                 private: splited[1]
-            } 
-        }else
+            }
+        } else
             data.rsa_keys = await RSA.generateKeys(2048);
 
         data.database_key = await AES.randomKey(32);
@@ -81,6 +81,7 @@ export const createNewKeys = createAsyncThunk<
             }
         }
         await EncryptedStorage.setItem('PublicBoardStore', JSON.stringify(store))
+        await EncryptedStorage.setItem('PublicBoardMaxId', '0')
         return data;
     }
 )
